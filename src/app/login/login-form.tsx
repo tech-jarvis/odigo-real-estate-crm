@@ -81,22 +81,24 @@ export function LoginForm() {
         {loading ? "Signing in…" : "Sign in"}
       </Button>
 
-      <div className="flex gap-2 pt-1">
-        <button
-          type="button"
-          onClick={() => fill("admin")}
-          className="flex-1 rounded-md border border-border bg-secondary/40 px-2 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-        >
-          Use admin
-        </button>
-        <button
-          type="button"
-          onClick={() => fill("viewer")}
-          className="flex-1 rounded-md border border-border bg-secondary/40 px-2 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-        >
-          Use viewer
-        </button>
-      </div>
+      {process.env.NODE_ENV === "development" && (
+        <div className="flex gap-2 pt-1">
+          <button
+            type="button"
+            onClick={() => fill("admin")}
+            className="flex-1 rounded-md border border-border bg-secondary/40 px-2 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+          >
+            Use admin
+          </button>
+          <button
+            type="button"
+            onClick={() => fill("viewer")}
+            className="flex-1 rounded-md border border-border bg-secondary/40 px-2 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+          >
+            Use viewer
+          </button>
+        </div>
+      )}
     </form>
   );
 }

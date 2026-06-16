@@ -23,17 +23,6 @@ export default function LoginPage() {
         <div className="rounded-xl border border-border bg-card/80 p-6 shadow-xl backdrop-blur">
           <LoginForm />
         </div>
-
-        <div className="mt-6 rounded-lg border border-border/60 bg-secondary/30 p-3.5 text-xs text-muted-foreground">
-          <p className="mb-1.5 font-medium text-foreground/80">
-            Demo accounts
-          </p>
-          <p className="font-mono">admin@odigo-test.com · full access</p>
-          <p className="font-mono">viewer@odigo-test.com · read only</p>
-          <p className="mt-1.5 font-mono opacity-70">
-            password: OdigoTest2026!
-          </p>
-        </div>
       </div>
     </main>
   );

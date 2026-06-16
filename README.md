@@ -10,8 +10,8 @@ Built for The Odigo Group technical assessment.
 
 ## Live demo
 
-- **App:** _(Vercel URL)_
-- **Repo:** _(GitHub URL)_
+- **App:** https://odigo-real-estate-crm.vercel.app/
+- **Repo:** https://github.com/tech-jarvis/odigo-real-estate-crm
 
 ### Test accounts
 
