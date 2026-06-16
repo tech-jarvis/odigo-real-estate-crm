@@ -15,10 +15,10 @@ Built for The Odigo Group technical assessment.
 
 ### Test accounts
 
-| Email | Password | Role |
-| --- | --- | --- |
-| `admin@odigo-test.com` | `OdigoTest2026!` | Admin — full read/write |
-| `viewer@odigo-test.com` | `OdigoTest2026!` | Viewer — read-only |
+| Email                   | Password         | Role                    |
+| ----------------------- | ---------------- | ----------------------- |
+| `admin@odigo-test.com`  | `OdigoTest2026!` | Admin — full read/write |
+| `viewer@odigo-test.com` | `OdigoTest2026!` | Viewer — read-only      |
 
 The login screen has one-click buttons to fill either account.
 
@@ -123,7 +123,7 @@ Access control lives in the database, not the UI. RLS is enabled on every table:
 
 - **Read:** any authenticated user can read all CRM data.
 - **Write:** only users whose `profiles.role = 'admin'` can insert/update/delete. This is evaluated through a `security definer` `is_admin()` helper used in the policies.
-- **Activity log is append-only at the DB layer:** it has a `select` and an `insert` policy and *no* update/delete policies, so edits and deletes are rejected by Postgres for everyone, including admins — not merely hidden in the UI.
+- **Activity log is append-only at the DB layer:** it has a `select` and an `insert` policy and _no_ update/delete policies, so edits and deletes are rejected by Postgres for everyone, including admins — not merely hidden in the UI.
 
 The UI mirrors these rules (viewers don't see write controls), but the database is the enforcement point. A viewer calling the API directly still cannot write.
 
@@ -138,13 +138,14 @@ The UI mirrors these rules (viewers don't see write controls), but the database 
 
 The app uses [TanStack Query](https://tanstack.com/query/latest) for client-side caching with a **server-prefetch → hydration → client-cache** pattern:
 
-| Layer | Responsibility |
-|-------|----------------|
-| Server Component | Calls `queryClient.prefetchQuery` using the SSR Supabase client (cookie auth) |
-| `HydrationBoundary` | Serialises the prefetched state and transfers it to the browser's singleton `QueryClient` |
-| Client Component (`useQuery`) | Reads from the already-populated cache — no loading spinner on first render |
+| Layer                         | Responsibility                                                                            |
+| ----------------------------- | ----------------------------------------------------------------------------------------- |
+| Server Component              | Calls `queryClient.prefetchQuery` using the SSR Supabase client (cookie auth)             |
+| `HydrationBoundary`           | Serialises the prefetched state and transfers it to the browser's singleton `QueryClient` |
+| Client Component (`useQuery`) | Reads from the already-populated cache — no loading spinner on first render               |
 
 **Cache configuration (global defaults):**
+
 - `staleTime: 5 min` — data is considered fresh for 5 minutes; navigating back to a page within that window skips the network entirely
 - `gcTime: 10 min` — inactive cache entries survive for 10 minutes after unmounting
 - `refetchOnWindowFocus: false` — no surprise refetch when the user switches tabs
@@ -152,34 +153,35 @@ The app uses [TanStack Query](https://tanstack.com/query/latest) for client-side
 
 **Query keys:**
 
-| Key | Data | Used by |
-|-----|------|---------|
-| `['projects', view]` | Projects list filtered by view (`active` / `archived` / `trash`) | `PipelineView` |
-| `['companies']` | `id + name` — lightweight list for the project form combobox | `PipelineView` → `ProjectFormDialog` |
-| `['companies-full']` | Full company rows with contact/project counts | `CompanyList` |
-| `['members']` | Profiles for the assignee dropdown | `PipelineView` → `ProjectFormDialog` |
+| Key                  | Data                                                             | Used by                              |
+| -------------------- | ---------------------------------------------------------------- | ------------------------------------ |
+| `['projects', view]` | Projects list filtered by view (`active` / `archived` / `trash`) | `PipelineView`                       |
+| `['companies']`      | `id + name` — lightweight list for the project form combobox     | `PipelineView` → `ProjectFormDialog` |
+| `['companies-full']` | Full company rows with contact/project counts                    | `CompanyList`                        |
+| `['members']`        | Profiles for the assignee dropdown                               | `PipelineView` → `ProjectFormDialog` |
 
 **Mutation invalidation:**
 
 After any write (create, update, delete, archive, restore, drag-and-drop stage move), the relevant mutation handler calls `queryClient.invalidateQueries` to mark the affected queries as stale. React Query then triggers a background refetch and updates the UI without a full page reload.
 
-| Mutation | Invalidates |
-|----------|-------------|
-| Create / edit project | `['projects']` (all views) |
-| Drag-and-drop stage change | `['projects']` |
-| Archive / restore / delete project | `['projects']` |
-| Create / edit company | `['companies']`, `['companies-full']` |
+| Mutation                           | Invalidates                           |
+| ---------------------------------- | ------------------------------------- |
+| Create / edit project              | `['projects']` (all views)            |
+| Drag-and-drop stage change         | `['projects']`                        |
+| Archive / restore / delete project | `['projects']`                        |
+| Create / edit company              | `['companies']`, `['companies-full']` |
 
 **Before/after behaviour:**
 
-| Scenario | Before | After |
-|----------|--------|-------|
-| Create a project | Dialog closes, then `router.refresh()` triggers full RSC re-render (~300–600 ms round-trip) | `invalidateQueries` triggers React Query background refetch from the browser; board updates in ~50–150 ms |
-| Navigate pipeline → companies → pipeline | Each visit re-fetches all projects server-side | Second pipeline visit served from browser cache (0 ms) if within 5-min staleTime |
-| Create a company | List stayed stale until manual refresh | `invalidateQueries` on both company keys updates the list instantly |
-| First page load | Same as before — server renders with full data | Same — server prefetches into `HydrationBoundary`, client renders without a loading spinner |
+| Scenario                                 | Before                                                                                      | After                                                                                                     |
+| ---------------------------------------- | ------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| Create a project                         | Dialog closes, then `router.refresh()` triggers full RSC re-render (~300–600 ms round-trip) | `invalidateQueries` triggers React Query background refetch from the browser; board updates in ~50–150 ms |
+| Navigate pipeline → companies → pipeline | Each visit re-fetches all projects server-side                                              | Second pipeline visit served from browser cache (0 ms) if within 5-min staleTime                          |
+| Create a company                         | List stayed stale until manual refresh                                                      | `invalidateQueries` on both company keys updates the list instantly                                       |
+| First page load                          | Same as before — server renders with full data                                              | Same — server prefetches into `HydrationBoundary`, client renders without a loading spinner               |
 
 **Trade-offs:**
+
 - `staleTime: 5 min` means users see data up to 5 minutes old without a visible refetch. For a single-team internal CRM this is acceptable; lower it (or set `refetchOnWindowFocus: true`) if collaborative real-time accuracy matters more.
 - Server Components still run on every navigation (due to `force-dynamic`), so auth checks and server-side prefetch happen on each visit — the React Query cache shortens client-side rendering to zero, but doesn't eliminate the server execution.
 - No optimistic updates in dialogs yet — the mutation fires and waits for server confirmation before updating the cache. The existing board drag-and-drop already has optimistic UI.
@@ -225,6 +227,5 @@ supabase/                      # 01_schema · 02_rls · 03_seed (run in order)
 ## Trade-offs & what I'd do next
 
 - **Team members = auth users.** "Assigned team member" maps to an app user (the same identities used for activity attribution). A real firm has field staff who never log in, which would warrant a separate `team_members` table; I kept it simple and consistent for the assessment scope.
-- **File references are textual.** The activity log supports a `file_reference` type but stores a reference/description rather than an uploaded file. Wiring Supabase Storage with signed URLs is the natural next step.
 - **No realtime yet.** Mutations use server actions + `queryClient.invalidateQueries` for the current user's view. Supabase Realtime subscriptions would propagate changes to all connected users without a refresh.
 - **Given more time:** global search across projects/companies, activity filters and pagination, per-user invites and an admin user-management screen, CSV export, and audit coverage on reads. Optimistic UI is currently only on the board; it could extend to dialogs.
