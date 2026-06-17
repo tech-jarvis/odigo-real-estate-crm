@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@supabase/supabase-js";
+import type { Database } from "@/lib/database.types";
 
 /**
  * GET /api/cron/cleanup-projects
@@ -8,8 +9,11 @@ import { createClient } from "@/lib/supabase/server";
  * Protected by a shared secret — set CRON_SECRET in env vars and pass it as
  * the Authorization header: `Bearer <CRON_SECRET>`.
  *
- * Schedule this endpoint with any cron service (Vercel Cron, GitHub Actions,
- * pg_cron via `net.http_get(...)`, etc.) to run daily.
+ * Vercel Cron (vercel.json) automatically passes this header when CRON_SECRET
+ * is set in the project's environment variables.
+ *
+ * Uses SUPABASE_SERVICE_ROLE_KEY to bypass RLS, since this endpoint runs
+ * without a user session.
  */
 export async function GET(request: Request) {
   const secret = process.env.CRON_SECRET;
@@ -20,7 +24,10 @@ export async function GET(request: Request) {
     }
   }
 
-  const supabase = await createClient();
+  const supabase = createClient<Database>(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  );
   const cutoff = new Date(Date.now() - 15 * 24 * 60 * 60 * 1000).toISOString();
 
   const { error, count } = await supabase
