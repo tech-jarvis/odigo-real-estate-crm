@@ -62,10 +62,6 @@ cp .env.example .env.local
 ```env
 NEXT_PUBLIC_SUPABASE_URL=https://your-project-ref.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your-publishable-or-anon-key
-
-# Optional — protects the soft-delete cleanup cron endpoint.
-# If omitted, the endpoint runs without auth checks.
-CRON_SECRET=some-long-random-string
 ```
 
 > Only the public (publishable/anon) key is used — there are no service-role keys in this app or repo. All writes go through RLS as the signed-in user.
@@ -79,6 +75,7 @@ Run the SQL files in `supabase/` in order, via the Supabase SQL Editor (or `psql
 3. `supabase/03_seed.sql` — test accounts + sample data
 4. `supabase/04_add_slugs.sql` — generated slug columns on companies and projects for URL-safe routing
 5. `supabase/05_file_attachments.sql` — `file_url` column on activity log + `project-files` storage bucket and policies
+6. `supabase/06_cron.sql` — pg_cron job that permanently purges trash-bin projects older than 15 days (runs daily at 02:00 UTC; requires the **pg_cron** extension to be enabled first via Dashboard → Database → Extensions)
 
 `03_seed.sql` is idempotent: it clears the two seed users and all CRM rows, then recreates them, so you can re-run it any time to reset to a known state.
 
