@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { FileText, Phone, ArrowRightLeft, StickyNote } from "lucide-react";
 import type { ActivityWithAuthor, ActivityType } from "@/lib/types";
 import { ACTIVITY_META } from "@/lib/types";
@@ -48,7 +49,7 @@ export function ActivityFeed({
 
               {/* Body text — skip for file entries where body is just the filename */}
               {entry.body && (!hasFile || entry.body !== entry.file_url) && (
-                <p className="mt-0.5 text-sm text-foreground/90">{entry.body}</p>
+                <p className="mt-0.5 truncate text-sm text-foreground/90">{entry.body}</p>
               )}
 
               {/* Inline file preview */}
@@ -56,17 +57,27 @@ export function ActivityFeed({
                 <FilePreview url={entry.file_url!} label={entry.body || undefined} />
               )}
 
-              {entry.author && (
-                <div className="mt-1.5 flex items-center gap-1.5">
-                  <Avatar
-                    name={entry.author.full_name}
-                    className="h-4 w-4 text-[8px]"
-                  />
-                  <span className="text-xs text-muted-foreground">
-                    {entry.author.full_name ?? entry.author.email}
-                  </span>
-                </div>
-              )}
+              <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1">
+                {entry.author && (
+                  <div className="flex items-center gap-1.5">
+                    <Avatar
+                      name={entry.author.full_name}
+                      className="h-4 w-4 text-[8px]"
+                    />
+                    <span className="text-xs text-muted-foreground">
+                      {entry.author.full_name ?? entry.author.email}
+                    </span>
+                  </div>
+                )}
+                {entry.project?.slug && (
+                  <Link
+                    href={`/pipeline/${entry.project.slug}`}
+                    className="truncate text-xs text-muted-foreground hover:text-gold hover:underline"
+                  >
+                    {entry.project.name}
+                  </Link>
+                )}
+              </div>
             </div>
           </li>
         );

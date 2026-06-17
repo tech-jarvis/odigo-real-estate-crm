@@ -53,6 +53,7 @@ export function ProjectControls({
               }
               toast.success("Project restored");
               queryClient.invalidateQueries({ queryKey: ["projects"] });
+              queryClient.invalidateQueries({ queryKey: ["dashboard"] });
               router.push("/pipeline");
             })
           }
@@ -101,6 +102,7 @@ export function ProjectControls({
                     }
                     toast.success("Project permanently deleted");
                     queryClient.invalidateQueries({ queryKey: ["projects"] });
+                    queryClient.invalidateQueries({ queryKey: ["dashboard"] });
                     router.push("/pipeline?show=trash");
                   })
                 }
@@ -125,6 +127,7 @@ export function ProjectControls({
       }
       toast.success(archived ? "Project restored" : "Project archived");
       queryClient.invalidateQueries({ queryKey: ["projects"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
       router.refresh();
     });
   }
@@ -138,6 +141,7 @@ export function ProjectControls({
       }
       toast.success("Moved to trash — restoreable for 15 days");
       queryClient.invalidateQueries({ queryKey: ["projects"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
       router.push("/pipeline");
     });
   }

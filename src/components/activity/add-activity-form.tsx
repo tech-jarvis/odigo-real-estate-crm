@@ -3,6 +3,7 @@
 import { useRef, useState, useTransition } from "react";
 import { Loader2, Send } from "lucide-react";
 import { toast } from "sonner";
+import { useQueryClient } from "@tanstack/react-query";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import {
@@ -30,6 +31,7 @@ export function AddActivityForm({ projectId }: { projectId: string }) {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [pending, startTransition] = useTransition();
   const formRef = useRef<HTMLFormElement>(null);
+  const queryClient = useQueryClient();
 
   function handle(formData: FormData) {
     formData.set("type", type);
@@ -71,6 +73,7 @@ export function AddActivityForm({ projectId }: { projectId: string }) {
       formRef.current?.reset();
       setType("note");
       setSelectedFile(null);
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
       toast.success("Entry added");
     });
   }

@@ -23,6 +23,7 @@ export type CompanyWithContacts = Company & {
 
 export type ActivityWithAuthor = ActivityEntry & {
   author: Pick<Profile, "id" | "full_name" | "email"> | null;
+  project?: Pick<Project, "id" | "name" | "slug"> | null;
 };
 
 export type ProjectContactLink = {

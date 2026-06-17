@@ -45,7 +45,7 @@ async function fetchDashboardData(): Promise<DashboardData> {
         .is("deleted_at", null),
       supabase
         .from("activity_log")
-        .select(`*, author:profiles(id, full_name, email)`)
+        .select(`*, author:profiles(id, full_name, email), project:projects(id, name, slug)`)
         .order("created_at", { ascending: false })
         .limit(10),
       supabase.auth.getUser(),
@@ -109,7 +109,8 @@ export function DashboardView() {
   } = useQuery({
     queryKey: ["dashboard"],
     queryFn: fetchDashboardData,
-    staleTime: 5 * 60 * 1000, // 5 min
+    staleTime: 0,
+    refetchOnMount: true,
   });
 
   // Show skeleton only on the very first load (empty cache).
