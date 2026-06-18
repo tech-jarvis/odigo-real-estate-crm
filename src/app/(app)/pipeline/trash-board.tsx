@@ -83,7 +83,7 @@ function TrashRow({ project }: { project: TrashedProject }) {
             </p>
           </div>
 
-          <div className="flex shrink-0 items-center gap-2">
+          <div className="flex shrink-0 items-center gap-2 self-end sm:self-auto">
             <Badge
               className={
                 urgent

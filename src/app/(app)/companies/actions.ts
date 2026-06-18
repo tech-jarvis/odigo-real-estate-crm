@@ -11,6 +11,10 @@ function n(v: FormDataEntryValue | null): string | null {
   return s ? s : null;
 }
 
+function hasHtml(v: FormDataEntryValue | null): boolean {
+  return /<[^>]*>/.test((v as string | null) ?? "");
+}
+
 function dbErr(code: string | undefined, message: string): string {
   if (code === "42501") return "Permission denied.";
   return message;
@@ -20,6 +24,10 @@ function dbErr(code: string | undefined, message: string): string {
 
 export async function createCompany(formData: FormData): Promise<Result> {
   const supabase = await createClient();
+  if (hasHtml(formData.get("name"))) return { error: "Company name cannot contain HTML." };
+  if (hasHtml(formData.get("address"))) return { error: "Address cannot contain HTML." };
+  if (hasHtml(formData.get("primary_contact"))) return { error: "Primary contact cannot contain HTML." };
+  if (hasHtml(formData.get("notes"))) return { error: "Notes cannot contain HTML." };
   const name = n(formData.get("name"));
   if (!name) return { error: "Company name is required." };
 
@@ -43,6 +51,10 @@ export async function updateCompany(
   formData: FormData
 ): Promise<Result> {
   const supabase = await createClient();
+  if (hasHtml(formData.get("name"))) return { error: "Company name cannot contain HTML." };
+  if (hasHtml(formData.get("address"))) return { error: "Address cannot contain HTML." };
+  if (hasHtml(formData.get("primary_contact"))) return { error: "Primary contact cannot contain HTML." };
+  if (hasHtml(formData.get("notes"))) return { error: "Notes cannot contain HTML." };
   const { error } = await supabase
     .from("companies")
     .update({
@@ -77,6 +89,8 @@ export async function createContact(
   formData: FormData
 ): Promise<Result> {
   const supabase = await createClient();
+  if (hasHtml(formData.get("name"))) return { error: "Contact name cannot contain HTML." };
+  if (hasHtml(formData.get("role"))) return { error: "Role cannot contain HTML." };
   const name = n(formData.get("name"));
   if (!name) return { error: "Contact name is required." };
 
@@ -99,6 +113,8 @@ export async function updateContact(
   formData: FormData
 ): Promise<Result> {
   const supabase = await createClient();
+  if (hasHtml(formData.get("name"))) return { error: "Contact name cannot contain HTML." };
+  if (hasHtml(formData.get("role"))) return { error: "Role cannot contain HTML." };
   const { error } = await supabase
     .from("contacts")
     .update({

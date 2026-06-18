@@ -48,9 +48,39 @@ export function ProjectFormDialog({ companies, members, mode, project }: Props) 
   const [stage, setStage] = useState(project?.stage ?? "lead");
   const [companyId, setCompanyId] = useState(project?.company_id ?? "");
   const [assignee, setAssignee] = useState(project?.assigned_to ?? "");
+  const [startDate, setStartDate] = useState<Date | undefined>(undefined);
+  const [nameError, setNameError] = useState<string | null>(null);
+  const [statusNoteError, setStatusNoteError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
   function handle(formData: FormData) {
+    const name = (formData.get("name") as string) ?? "";
+    if (/<[^>]*>/.test(name)) {
+      const msg = "HTML tags are not allowed. Remove < > characters from the name.";
+      setNameError(msg);
+      toast.error("Invalid project name", { description: msg });
+      return;
+    }
+    setNameError(null);
+
+    const statusNote = (formData.get("status_note") as string) ?? "";
+    if (/<[^>]*>/.test(statusNote)) {
+      const msg = "HTML tags are not allowed in the status note.";
+      setStatusNoteError(msg);
+      toast.error("Invalid status note", { description: msg });
+      return;
+    }
+    setStatusNoteError(null);
+
+    const sd = formData.get("start_date") as string;
+    const ed = formData.get("estimated_end_date") as string;
+    if (sd && ed && ed < sd) {
+      toast.error("Invalid dates", {
+        description: "End date must be on or after the start date.",
+      });
+      return;
+    }
+
     formData.set("stage", stage);
     if (companyId) formData.set("company_id", companyId);
     if (assignee) formData.set("assigned_to", assignee);
@@ -74,7 +104,7 @@ export function ProjectFormDialog({ companies, members, mode, project }: Props) 
   const memberLabel = (m: Option) => m.full_name || m.email || "Unknown";
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (!o) { setNameError(null); setStatusNoteError(null); } }}>
       <DialogTrigger asChild>
         {mode === "create" ? (
           <Button>
@@ -99,7 +129,7 @@ export function ProjectFormDialog({ companies, members, mode, project }: Props) 
           </DialogDescription>
         </DialogHeader>
 
-        <form action={handle} className="space-y-4">
+        <form onSubmit={(e) => { e.preventDefault(); handle(new FormData(e.currentTarget)); }} className="space-y-4">
           <div className="space-y-1.5">
             <Label htmlFor="name">Project name</Label>
             <Input
@@ -108,7 +138,13 @@ export function ProjectFormDialog({ companies, members, mode, project }: Props) 
               required
               defaultValue={project?.name}
               placeholder="e.g. Hale Lakefront Residence"
+              aria-invalid={!!nameError}
+              className={nameError ? "border-destructive focus-visible:ring-destructive" : ""}
+              onChange={() => nameError && setNameError(null)}
             />
+            {nameError && (
+              <p className="text-xs text-destructive">{nameError}</p>
+            )}
           </div>
 
           <div className="grid grid-cols-2 gap-3">
@@ -134,7 +170,7 @@ export function ProjectFormDialog({ companies, members, mode, project }: Props) 
                 name="project_value"
                 type="number"
                 min="0"
-                step="1000"
+                step="1"
                 defaultValue={project?.project_value ?? ""}
                 placeholder="0"
               />
@@ -158,6 +194,7 @@ export function ProjectFormDialog({ companies, members, mode, project }: Props) 
                 name="start_date"
                 defaultValue={project?.start_date}
                 placeholder="Pick a date"
+                onChange={setStartDate}
               />
             </div>
             <div className="space-y-1.5">
@@ -166,6 +203,7 @@ export function ProjectFormDialog({ companies, members, mode, project }: Props) 
                 name="estimated_end_date"
                 defaultValue={project?.estimated_end_date}
                 placeholder="Pick a date"
+                minDate={startDate}
               />
             </div>
           </div>
@@ -193,7 +231,11 @@ export function ProjectFormDialog({ companies, members, mode, project }: Props) 
               name="status_note"
               defaultValue={project?.status_note ?? ""}
               placeholder="Where things stand…"
+              aria-invalid={!!statusNoteError}
+              className={statusNoteError ? "border-destructive focus-visible:ring-destructive" : ""}
+              onChange={() => statusNoteError && setStatusNoteError(null)}
             />
+            {statusNoteError && <p className="text-xs text-destructive">{statusNoteError}</p>}
           </div>
 
           <DialogFooter>

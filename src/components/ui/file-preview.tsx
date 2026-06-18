@@ -10,6 +10,15 @@ import {
 
 type FileKind = "image" | "pdf" | "other";
 
+function isSafeUrl(url: string): boolean {
+  try {
+    const { protocol } = new URL(url);
+    return protocol === "https:" || protocol === "http:";
+  } catch {
+    return false;
+  }
+}
+
 function detectKind(url: string): FileKind {
   const clean = url.split("?")[0].toLowerCase();
   const ext = clean.split(".").pop() ?? "";
@@ -31,6 +40,9 @@ function displayName(url: string): string {
 
 export function FilePreview({ url, label }: { url: string; label?: string }) {
   const [open, setOpen] = useState(false);
+
+  if (!isSafeUrl(url)) return null;
+
   const kind = detectKind(url);
   const name = label || displayName(url);
 
@@ -78,6 +90,7 @@ export function FilePreview({ url, label }: { url: string; label?: string }) {
             <iframe
               src={url}
               title={name}
+              sandbox="allow-scripts allow-same-origin"
               className="mt-2 min-h-0 flex-1 rounded-md border border-border"
             />
           </DialogContent>
@@ -91,7 +104,7 @@ export function FilePreview({ url, label }: { url: string; label?: string }) {
       href={url}
       download={name}
       target="_blank"
-      rel="noreferrer"
+      rel="noreferrer noopener"
       className="mt-2 inline-flex items-center gap-1.5 rounded-md border border-border bg-secondary/50 px-2.5 py-1.5 text-xs text-foreground/80 transition-colors hover:bg-secondary"
     >
       <FileText className="h-3.5 w-3.5 text-sky-400" />

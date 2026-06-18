@@ -45,9 +45,48 @@ export function CompanyFormDialog({
     company?.segment ?? "residential"
   );
   const [phoneValid, setPhoneValid] = useState(true);
+  const [nameError, setNameError] = useState<string | null>(null);
+  const [addressError, setAddressError] = useState<string | null>(null);
+  const [contactError, setContactError] = useState<string | null>(null);
+  const [notesError, setNotesError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
   function handle(formData: FormData) {
+    const name = (formData.get("name") as string)?.trim();
+    if (!name) {
+      setNameError("Company name is required.");
+      toast.error("Company name is required");
+      return;
+    }
+    if (/<[^>]*>/.test(name)) {
+      const msg = "HTML tags are not allowed. Remove < > characters from the name.";
+      setNameError(msg);
+      toast.error("Invalid company name", { description: msg });
+      return;
+    }
+    setNameError(null);
+
+    const address = (formData.get("address") as string) ?? "";
+    if (/<[^>]*>/.test(address)) {
+      const msg = "HTML tags are not allowed in the address.";
+      setAddressError(msg); toast.error("Invalid address", { description: msg }); return;
+    }
+    setAddressError(null);
+
+    const primaryContact = (formData.get("primary_contact") as string) ?? "";
+    if (/<[^>]*>/.test(primaryContact)) {
+      const msg = "HTML tags are not allowed in the primary contact.";
+      setContactError(msg); toast.error("Invalid primary contact", { description: msg }); return;
+    }
+    setContactError(null);
+
+    const notes = (formData.get("notes") as string) ?? "";
+    if (/<[^>]*>/.test(notes)) {
+      const msg = "HTML tags are not allowed in the notes.";
+      setNotesError(msg); toast.error("Invalid notes", { description: msg }); return;
+    }
+    setNotesError(null);
+
     if (!phoneValid) {
       toast.error("Invalid phone number", {
         description: "Please enter a valid phone number before saving.",
@@ -74,7 +113,7 @@ export function CompanyFormDialog({
   }
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (!o) { setNameError(null); setAddressError(null); setContactError(null); setNotesError(null); } }}>
       <DialogTrigger asChild>
         {mode === "create" ? (
           <Button>
@@ -96,11 +135,22 @@ export function CompanyFormDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <form action={handle} className="space-y-4">
+        <form onSubmit={(e) => { e.preventDefault(); handle(new FormData(e.currentTarget)); }} className="space-y-4">
           <div className="grid grid-cols-2 gap-3">
             <div className="col-span-2 space-y-1.5 sm:col-span-1">
               <Label htmlFor="name">Name</Label>
-              <Input id="name" name="name" required defaultValue={company?.name} />
+              <Input
+                id="name"
+                name="name"
+                required
+                defaultValue={company?.name}
+                aria-invalid={!!nameError}
+                className={nameError ? "border-destructive focus-visible:ring-destructive" : ""}
+                onChange={() => nameError && setNameError(null)}
+              />
+              {nameError && (
+                <p className="text-xs text-destructive">{nameError}</p>
+              )}
             </div>
             <div className="col-span-2 space-y-1.5 sm:col-span-1">
               <Label>Segment</Label>
@@ -124,7 +174,15 @@ export function CompanyFormDialog({
 
           <div className="space-y-1.5">
             <Label htmlFor="address">Address</Label>
-            <Input id="address" name="address" defaultValue={company?.address ?? ""} />
+            <Input
+              id="address"
+              name="address"
+              defaultValue={company?.address ?? ""}
+              aria-invalid={!!addressError}
+              className={addressError ? "border-destructive focus-visible:ring-destructive" : ""}
+              onChange={() => addressError && setAddressError(null)}
+            />
+            {addressError && <p className="text-xs text-destructive">{addressError}</p>}
           </div>
 
           <div className="space-y-1.5">
@@ -133,7 +191,11 @@ export function CompanyFormDialog({
               id="primary_contact"
               name="primary_contact"
               defaultValue={company?.primary_contact ?? ""}
+              aria-invalid={!!contactError}
+              className={contactError ? "border-destructive focus-visible:ring-destructive" : ""}
+              onChange={() => contactError && setContactError(null)}
             />
+            {contactError && <p className="text-xs text-destructive">{contactError}</p>}
           </div>
 
           <div className="space-y-1.5">
@@ -157,7 +219,15 @@ export function CompanyFormDialog({
 
           <div className="space-y-1.5">
             <Label htmlFor="notes">Notes</Label>
-            <Textarea id="notes" name="notes" defaultValue={company?.notes ?? ""} />
+            <Textarea
+              id="notes"
+              name="notes"
+              defaultValue={company?.notes ?? ""}
+              aria-invalid={!!notesError}
+              className={notesError ? "border-destructive focus-visible:ring-destructive" : ""}
+              onChange={() => notesError && setNotesError(null)}
+            />
+            {notesError && <p className="text-xs text-destructive">{notesError}</p>}
           </div>
 
           <DialogFooter>

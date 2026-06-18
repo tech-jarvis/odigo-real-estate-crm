@@ -40,7 +40,7 @@ export function StageMover({
 
   return (
     <Select value={stage} onValueChange={onChange} disabled={pending}>
-      <SelectTrigger className="h-8 w-[150px]">
+      <SelectTrigger className="h-8 w-[130px]">
         <SelectValue />
       </SelectTrigger>
       <SelectContent>

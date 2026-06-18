@@ -29,11 +29,20 @@ const TYPES: ActivityType[] = [
 export function AddActivityForm({ projectId }: { projectId: string }) {
   const [type, setType] = useState<ActivityType>("note");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [bodyError, setBodyError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
   const formRef = useRef<HTMLFormElement>(null);
   const queryClient = useQueryClient();
 
   function handle(formData: FormData) {
+    const body = (formData.get("body") as string)?.trim() ?? "";
+    if (/<[^>]*>/.test(body)) {
+      const msg = "HTML tags are not allowed in the body.";
+      setBodyError(msg);
+      toast.error("Invalid entry", { description: msg });
+      return;
+    }
+    setBodyError(null);
     formData.set("type", type);
 
     startTransition(async () => {
@@ -79,14 +88,16 @@ export function AddActivityForm({ projectId }: { projectId: string }) {
   }
 
   return (
-    <form ref={formRef} action={handle} className="space-y-2.5">
+    <form ref={formRef} onSubmit={(e) => { e.preventDefault(); handle(new FormData(e.currentTarget)); }} className="space-y-2.5">
       {type === "file_reference" ? (
         <>
           <FileUploadZone file={selectedFile} onFileChange={setSelectedFile} />
           <Textarea
             name="body"
             placeholder="Optional note about this file…"
-            className="min-h-[52px]"
+            aria-invalid={!!bodyError}
+            className={`min-h-[52px]${bodyError ? " border-destructive focus-visible:ring-destructive" : ""}`}
+            onChange={() => bodyError && setBodyError(null)}
           />
         </>
       ) : (
@@ -94,9 +105,12 @@ export function AddActivityForm({ projectId }: { projectId: string }) {
           name="body"
           required
           placeholder="Add a note, call summary, or status update…"
-          className="min-h-[64px]"
+          aria-invalid={!!bodyError}
+          className={`min-h-[64px]${bodyError ? " border-destructive focus-visible:ring-destructive" : ""}`}
+          onChange={() => bodyError && setBodyError(null)}
         />
       )}
+      {bodyError && <p className="text-xs text-destructive">{bodyError}</p>}
 
       <div className="flex items-center justify-between gap-2">
         <Select

@@ -13,6 +13,8 @@ interface DatePickerInputProps {
   defaultValue?: string | null;
   placeholder?: string;
   className?: string;
+  minDate?: Date;
+  onChange?: (date: Date | undefined) => void;
 }
 
 export function DatePickerInput({
@@ -20,6 +22,8 @@ export function DatePickerInput({
   defaultValue,
   placeholder = "Pick a date",
   className,
+  minDate,
+  onChange,
 }: DatePickerInputProps) {
   const [date, setDate] = React.useState<Date | undefined>(
     defaultValue ? parseISO(defaultValue) : undefined
@@ -28,6 +32,12 @@ export function DatePickerInput({
 
   const formatted = date ? format(date, "MMM d, yyyy") : undefined;
   const isoValue = date ? format(date, "yyyy-MM-dd") : "";
+
+  function handleSelect(d: Date | undefined) {
+    setDate(d);
+    setOpen(false);
+    onChange?.(d);
+  }
 
   return (
     <div className={cn("relative", className)}>
@@ -50,10 +60,8 @@ export function DatePickerInput({
           <Calendar
             mode="single"
             selected={date}
-            onSelect={(d) => {
-              setDate(d);
-              setOpen(false);
-            }}
+            onSelect={handleSelect}
+            disabled={minDate ? { before: minDate } : undefined}
             initialFocus
           />
         </PopoverContent>

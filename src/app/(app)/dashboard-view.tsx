@@ -199,9 +199,9 @@ export function DashboardView() {
         />
       </div>
 
-      <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-3">
+      <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-5">
         {/* ----- Chart + closing soon ----- */}
-        <div className="space-y-6 lg:col-span-2">
+        <div className="space-y-6 lg:col-span-3">
           <Card>
             <CardHeader>
               <CardTitle className="text-sm">Pipeline value by stage</CardTitle>
@@ -269,7 +269,7 @@ export function DashboardView() {
         </div>
 
         {/* ----- Recent activity ----- */}
-        <div className="lg:col-span-1">
+        <div className="lg:col-span-2">
           <Card>
             <CardHeader className="flex-row items-center justify-between space-y-0">
               <CardTitle className="flex items-center gap-2 text-sm">
@@ -291,7 +291,7 @@ export function DashboardView() {
                   className="py-8"
                 />
               ) : (
-                <ActivityFeed entries={entries} />
+                <ActivityFeed entries={entries} variant="feed" />
               )}
             </CardContent>
           </Card>

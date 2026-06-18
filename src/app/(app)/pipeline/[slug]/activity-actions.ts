@@ -19,6 +19,19 @@ export async function addActivity(
   const file_url = (formData.get("file_url") as string | null)?.trim() || null;
   const file_name = (formData.get("file_name") as string | null)?.trim() || null;
 
+  if (rawBody && /<[^>]*>/.test(rawBody)) return { error: "HTML tags are not allowed in the body." };
+  if (file_name && /<[^>]*>/.test(file_name)) return { error: "Invalid file name." };
+
+  if (file_url) {
+    try {
+      const { protocol } = new URL(file_url);
+      if (protocol !== "https:" && protocol !== "http:")
+        return { error: "Invalid file URL." };
+    } catch {
+      return { error: "Invalid file URL." };
+    }
+  }
+
   let body: string;
   if (type === "file_reference") {
     if (!file_url) return { error: "File upload is required." };

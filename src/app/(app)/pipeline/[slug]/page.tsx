@@ -100,26 +100,28 @@ export default async function ProjectDetailPage({
       )}
 
       <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        {/* Left: title + meta */}
         <div className="min-w-0">
-          <div className="flex flex-wrap items-center gap-2">
-            <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">
-              {p.name}
-            </h1>
+          <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">
+            {p.name}
+          </h1>
+          <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1.5">
             <StageBadge stage={p.stage} />
             {p.archived && <Badge variant="outline">Archived</Badge>}
+            {p.company && (
+              <Link
+                href={`/companies/${p.company.slug}`}
+                className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-gold"
+              >
+                <Building2 className="h-3.5 w-3.5" /> {p.company.name}
+              </Link>
+            )}
           </div>
-          {p.company && (
-            <Link
-              href={`/companies/${p.company.slug}`}
-              className="mt-1.5 inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-gold"
-            >
-              <Building2 className="h-3.5 w-3.5" /> {p.company.name}
-            </Link>
-          )}
         </div>
 
+        {/* Right: action buttons */}
         {isAdmin && (
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="flex shrink-0 flex-wrap items-center gap-2">
             <StageMover projectId={p.id} stage={p.stage} />
             <ProjectFormDialog
               mode="edit"

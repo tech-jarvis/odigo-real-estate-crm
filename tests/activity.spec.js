@@ -18,7 +18,7 @@ async function openFirstProject(page) {
   await page.waitForURL(/\/pipeline\/.+/);
 }
 
-const PLACEHOLDER = "Add a note, call summary, or file reference…";
+const PLACEHOLDER = "Add a note, call summary, or status update…";
 
 test.describe("Activity Log", () => {
   test("activity log section shows Append-only badge", async ({ page }) => {

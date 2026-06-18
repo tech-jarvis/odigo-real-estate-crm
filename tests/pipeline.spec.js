@@ -4,7 +4,7 @@ const { test, expect } = require("@playwright/test");
 const ADMIN = { email: "admin@odigo-test.com", password: "OdigoTest2026!" };
 const VIEWER = { email: "viewer@odigo-test.com", password: "OdigoTest2026!" };
 const STAGES = ["Lead", "Proposal", "Active", "Completed"];
-const PLACEHOLDER = "Add a note, call summary, or file reference…";
+const PLACEHOLDER = "Add a note, call summary, or status update…";
 
 async function login(page, user) {
   await page.goto("/login");
