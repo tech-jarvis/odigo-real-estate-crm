@@ -59,12 +59,35 @@ export type Database = {
           },
         ]
       }
+      calendar_connect_tokens: {
+        Row: {
+          created_at: string
+          expires_at: string
+          token: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          expires_at: string
+          token: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string
+          token?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       companies: {
         Row: {
           address: string | null
           created_at: string
           email: string | null
+          funnel_source: string | null
           id: string
+          industry: string | null
           name: string
           notes: string | null
           phone: string | null
@@ -77,7 +100,9 @@ export type Database = {
           address?: string | null
           created_at?: string
           email?: string | null
+          funnel_source?: string | null
           id?: string
+          industry?: string | null
           name: string
           notes?: string | null
           phone?: string | null
@@ -90,7 +115,9 @@ export type Database = {
           address?: string | null
           created_at?: string
           email?: string | null
+          funnel_source?: string | null
           id?: string
+          industry?: string | null
           name?: string
           notes?: string | null
           phone?: string | null
@@ -141,6 +168,60 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      mcp_auth_codes: {
+        Row: {
+          access_token: string
+          code: string
+          code_challenge: string
+          created_at: string
+          expires_at: string
+          refresh_token: string | null
+        }
+        Insert: {
+          access_token: string
+          code: string
+          code_challenge: string
+          created_at?: string
+          expires_at: string
+          refresh_token?: string | null
+        }
+        Update: {
+          access_token?: string
+          code?: string
+          code_challenge?: string
+          created_at?: string
+          expires_at?: string
+          refresh_token?: string | null
+        }
+        Relationships: []
+      }
+      oauth_tokens: {
+        Row: {
+          created_at: string
+          id: string
+          provider: string
+          refresh_token: string
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          provider: string
+          refresh_token: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          provider?: string
+          refresh_token?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
       }
       profiles: {
         Row: {
@@ -271,7 +352,13 @@ export type Database = {
     }
     Functions: {
       cleanup_deleted_projects: { Args: never; Returns: number }
+      cleanup_expired_calendar_connect_tokens: {
+        Args: never
+        Returns: undefined
+      }
+      cleanup_expired_mcp_auth_codes: { Args: never; Returns: undefined }
       is_admin: { Args: never; Returns: boolean }
+      slugify: { Args: { input_text: string }; Returns: string }
     }
     Enums: {
       activity_type:

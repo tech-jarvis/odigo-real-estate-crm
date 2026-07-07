@@ -6,6 +6,8 @@ Built for The Odigo Group technical assessment.
 
 **Stack:** Next.js 15 (App Router) · TypeScript · Supabase (Postgres, Auth, RLS) · TanStack Query v5 · Tailwind CSS · Radix UI · Recharts · Vercel.
 
+> **MCP Server** lives in the sibling [`odigo-mcp/`](../odigo-mcp) directory. It is a separate Node.js service that gives Claude tools to read and write the CRM. The two projects share only the Supabase database — no code dependencies between them.
+
 ---
 
 ## Live demo
@@ -31,6 +33,7 @@ The login screen has one-click buttons to fill either account.
 - **Project detail** — all project fields, quick stage change, linked contacts, and the append-only activity log with a typed entry composer.
 - **Clients** — companies with industry segment, address and contact details; each company has multiple contacts (full CRUD) and a list of its linked projects.
 - **Activity log** — append-only by design; entries are timestamped, attributed to their author, and typed (note / status change / file reference / call summary).
+- **AI Calendar** *(admin only)* — a section in the sidebar lets admins connect their Google Calendar or Outlook Calendar account via OAuth. Once connected, Claude can use the `send_calendar_invite` MCP tool to create calendar events directly from those accounts. Accounts can be disconnected (with confirmation) and reconnected at any time.
 
 Every data-fetching view has explicit **loading**, **error**, and **empty** states.
 
@@ -62,6 +65,10 @@ cp .env.example .env.local
 ```env
 NEXT_PUBLIC_SUPABASE_URL=https://your-project-ref.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your-publishable-or-anon-key
+
+# Optional — required only if you want the AI Calendar connect buttons in the sidebar.
+# Set to the public URL of your odigo-mcp deployment.
+NEXT_PUBLIC_MCP_URL=https://odigo-mcp.vercel.app
 ```
 
 > Only the public (publishable/anon) key is used — there are no service-role keys in this app or repo. All writes go through RLS as the signed-in user.
@@ -200,23 +207,28 @@ src/
   app/
     login/                     # auth screen + form (client)
     auth/signout/              # POST route to sign out
+    api/
+      calendar/
+        connect-token/         # POST — issues one-time token for MCP calendar OAuth
+        status/                # GET  — returns { google: bool, outlook: bool }
+        disconnect/            # DELETE — removes an oauth_tokens row for the user
     (app)/                     # authenticated route group
       layout.tsx               # loads profile, provides role context, app shell
       page.tsx                 # Dashboard
       pipeline/                # Kanban board, project CRUD, actions
-        [id]/                  # project detail + activity log
+        [slug]/                # project detail + activity log
       companies/               # client list, company + contact CRUD
-        [id]/                  # company detail
+        [slug]/                # company detail
   components/
     ui/                        # Radix-based primitives (button, dialog, select…)
     shared/                    # logo, badges, avatar, empty/error states
-    shell/                     # sidebar, app shell, user menu
+    shell/                     # sidebar (incl. AI Calendar section), app shell, user menu
     activity/                  # activity feed + composer
     dashboard/                 # stat cards
   lib/
     supabase/                  # browser / server / middleware clients
     types.ts, database.types.ts, auth.ts, utils.ts
-supabase/                      # 01_schema · 02_rls · 03_seed (run in order)
+supabase/                      # 01_schema · 02_rls · 03_seed · … (run in order)
 ```
 
 ---
