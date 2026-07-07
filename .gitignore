@@ -24,9 +24,14 @@ yarn-error.log*
 .env
 .env.local
 .env*.local
+mcp-server/.env
+mcp-server/dist/
 
 # vercel
 .vercel
 
 # typescript
 *.tsbuildinfo
+
+/mcp-server/node_modules
+/mcp-server/dist
