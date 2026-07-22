@@ -22,18 +22,25 @@ const NAV = [
   { href: "/companies", label: "Clients", icon: Building2, exact: false },
 ];
 
-type CalendarStatus = { google: boolean; outlook: boolean }
+type CalendarStatus = {
+  google: boolean
+  googleEmail: string | null
+  outlook: boolean
+  outlookEmail: string | null
+}
 
 function CalendarConnectButton({
   provider,
   label,
   connected,
+  accountEmail,
   onConnected,
   onDisconnected,
 }: {
   provider: "google" | "outlook"
   label: string
   connected: boolean
+  accountEmail: string | null
   onConnected: () => void
   onDisconnected: () => void
 }) {
@@ -76,13 +83,18 @@ function CalendarConnectButton({
     return (
       <>
         <div className="group flex items-center gap-2.5 rounded-md px-3 py-2 text-sm">
-          <CheckCircle2 className="h-4 w-4 shrink-0 text-gold" />
-          <span className="truncate text-foreground">{label}</span>
-          <span className="ml-auto text-[11px] text-gold/80 group-hover:hidden">Connected</span>
+          <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 self-start text-gold" />
+          <div className="min-w-0 flex-1">
+            <div className="truncate text-foreground">{label}</div>
+            {accountEmail && (
+              <div className="truncate text-[11px] text-muted-foreground">{accountEmail}</div>
+            )}
+          </div>
+          <span className="ml-auto shrink-0 text-[11px] text-gold/80 group-hover:hidden">Connected</span>
           <button
             onClick={() => setConfirmOpen(true)}
             title={`Disconnect ${label}`}
-            className="ml-auto hidden group-hover:flex items-center gap-1 text-[11px] text-muted-foreground hover:text-destructive transition-colors"
+            className="ml-auto hidden shrink-0 items-center gap-1 text-[11px] text-muted-foreground hover:text-destructive transition-colors group-hover:flex"
           >
             <X className="h-3 w-3" />
             Disconnect
@@ -94,7 +106,7 @@ function CalendarConnectButton({
             <DialogHeader>
               <DialogTitle>Disconnect {label}?</DialogTitle>
               <DialogDescription>
-                This will remove your {label} connection. Claude will no longer be able to send calendar invites until you reconnect.
+                This will remove your {label} connection{accountEmail ? ` (${accountEmail})` : ""}. Claude will no longer be able to send calendar invites until you reconnect.
               </DialogDescription>
             </DialogHeader>
             <DialogFooter className="gap-2 sm:gap-0">
@@ -194,6 +206,7 @@ export function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
             provider="google"
             label="Google Calendar"
             connected={status?.google ?? false}
+            accountEmail={status?.googleEmail ?? null}
             onConnected={refreshStatus}
             onDisconnected={refreshStatus}
           />
@@ -201,6 +214,7 @@ export function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
             provider="outlook"
             label="Outlook Calendar"
             connected={status?.outlook ?? false}
+            accountEmail={status?.outlookEmail ?? null}
             onConnected={refreshStatus}
             onDisconnected={refreshStatus}
           />

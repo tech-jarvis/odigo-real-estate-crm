@@ -309,3 +309,72 @@ export async function permanentlyDeleteProject(id: string): Promise<ActionResult
   revalidatePath("/");
   return { error: null };
 }
+
+// ---------- Project contacts ----------
+// Links a company contact to this specific project. Only linked contacts
+// are visible to the MCP assistant for outreach (send_calendar_invite
+// refuses to email a contact that isn't linked to the project).
+
+export async function linkContactToProject(
+  projectId: string,
+  contactId: string
+): Promise<ActionResult> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Not authenticated." };
+
+  // Contact must belong to the project's own company — otherwise this
+  // could attach an unrelated company's contact to the project.
+  const [{ data: project }, { data: contact }] = await Promise.all([
+    supabase.from("projects").select("company_id").eq("id", projectId).single(),
+    supabase.from("contacts").select("name, company_id").eq("id", contactId).single(),
+  ]);
+  if (!project || !contact) return { error: "Project or contact not found." };
+  if (!project.company_id || contact.company_id !== project.company_id) {
+    return { error: "Contact does not belong to this project's company." };
+  }
+
+  const { error } = await supabase
+    .from("project_contacts")
+    .insert({ project_id: projectId, contact_id: contactId });
+  if (error) {
+    if (error.code === "23505") return { error: "Contact is already linked to this project." };
+    return { error: dbErr(error.code, error.message) };
+  }
+
+  await logActivity(projectId, user.id, "note", `${contact.name} linked to project.`);
+
+  revalidatePath(`/pipeline/${projectId}`);
+  return { error: null };
+}
+
+export async function unlinkContactFromProject(
+  projectId: string,
+  contactId: string
+): Promise<ActionResult> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Not authenticated." };
+
+  const { data: contact } = await supabase
+    .from("contacts")
+    .select("name")
+    .eq("id", contactId)
+    .single();
+
+  const { error } = await supabase
+    .from("project_contacts")
+    .delete()
+    .eq("project_id", projectId)
+    .eq("contact_id", contactId);
+  if (error) return { error: dbErr(error.code, error.message) };
+
+  await logActivity(projectId, user.id, "note", `${contact?.name ?? "Contact"} unlinked from project.`);
+
+  revalidatePath(`/pipeline/${projectId}`);
+  return { error: null };
+}

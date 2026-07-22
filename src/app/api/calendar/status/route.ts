@@ -8,12 +8,14 @@ export async function GET() {
 
   const { data } = await supabase
     .from('oauth_tokens')
-    .select('provider')
+    .select('provider, account_email')
     .eq('user_id', user.id)
 
-  const connected = new Set((data ?? []).map((r) => r.provider))
+  const byProvider = new Map((data ?? []).map((r) => [r.provider, r.account_email]))
   return NextResponse.json({
-    google: connected.has('google'),
-    outlook: connected.has('outlook'),
+    google: byProvider.has('google'),
+    googleEmail: byProvider.get('google') ?? null,
+    outlook: byProvider.has('outlook'),
+    outlookEmail: byProvider.get('outlook') ?? null,
   })
 }

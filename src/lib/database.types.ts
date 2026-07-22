@@ -198,6 +198,7 @@ export type Database = {
       }
       oauth_tokens: {
         Row: {
+          account_email: string | null
           created_at: string
           id: string
           provider: string
@@ -206,6 +207,7 @@ export type Database = {
           user_id: string | null
         }
         Insert: {
+          account_email?: string | null
           created_at?: string
           id?: string
           provider: string
@@ -214,6 +216,7 @@ export type Database = {
           user_id?: string | null
         }
         Update: {
+          account_email?: string | null
           created_at?: string
           id?: string
           provider?: string
