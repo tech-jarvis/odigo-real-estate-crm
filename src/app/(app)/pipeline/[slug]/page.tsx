@@ -29,6 +29,7 @@ import { AddActivityForm } from "@/components/activity/add-activity-form";
 import { ProjectFormDialog } from "../project-form-dialog";
 import { ProjectControls } from "./project-controls";
 import { StageMover } from "./stage-mover";
+import { ProjectContactsCard } from "./project-contacts-card";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import type {
   ProjectWithRelations,
@@ -60,24 +61,42 @@ export default async function ProjectDetailPage({
   if (!project) notFound();
   const p = project as unknown as ProjectWithRelations & { company: any };
 
-  const [{ data: activity }, { data: links }, { data: companies }, { data: members }] =
-    await Promise.all([
-      supabase
-        .from("activity_log")
-        .select(`*, author:profiles(id, full_name, email)`)
-        .eq("project_id", p.id)
-        .order("created_at", { ascending: false }),
-      supabase
-        .from("project_contacts")
-        .select(`contact:contacts(*)`)
-        .eq("project_id", p.id),
-      supabase.from("companies").select("id, name, slug").order("name"),
-      supabase.from("profiles").select("id, full_name, email").order("full_name"),
-    ]);
+  const [
+    { data: activity },
+    { data: links },
+    { data: companies },
+    { data: members },
+    { data: companyContacts },
+  ] = await Promise.all([
+    supabase
+      .from("activity_log")
+      .select(`*, author:profiles(id, full_name, email)`)
+      .eq("project_id", p.id)
+      .order("created_at", { ascending: false }),
+    supabase
+      .from("project_contacts")
+      .select(`contact:contacts(*)`)
+      .eq("project_id", p.id),
+    supabase.from("companies").select("id, name, slug").order("name"),
+    supabase.from("profiles").select("id, full_name, email").order("full_name"),
+    // All contacts belonging to this project's company — the pool that
+    // linked contacts can be picked from below.
+    p.company
+      ? supabase
+          .from("contacts")
+          .select("*")
+          .eq("company_id", p.company.id)
+          .order("name")
+      : Promise.resolve({ data: [] as Contact[] }),
+  ]);
 
   const contacts = (links ?? [])
     .map((l) => l.contact as unknown as Contact | null)
     .filter(Boolean) as Contact[];
+  const linkedIds = new Set(contacts.map((c) => c.id));
+  const availableContacts = ((companyContacts ?? []) as Contact[]).filter(
+    (c) => !linkedIds.has(c.id)
+  );
   const entries = (activity ?? []) as unknown as ActivityWithAuthor[];
 
   return (
@@ -199,25 +218,17 @@ export default async function ProjectDetailPage({
               </CardTitle>
             </CardHeader>
             <CardContent>
-              {contacts.length === 0 ? (
-                <p className="text-sm text-muted-foreground">
-                  No contacts linked.
-                </p>
+              {p.company ? (
+                <ProjectContactsCard
+                  projectId={p.id}
+                  linkedContacts={contacts}
+                  availableContacts={availableContacts}
+                  isAdmin={isAdmin}
+                />
               ) : (
-                <ul className="space-y-3">
-                  {contacts.map((c) => (
-                    <li key={c.id} className="flex items-start gap-2.5">
-                      <Avatar name={c.name} className="mt-0.5" />
-                      <div className="min-w-0">
-                        <p className="text-sm font-medium">{c.name}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {c.role ?? "—"}
-                          {c.email ? ` · ${c.email}` : ""}
-                        </p>
-                      </div>
-                    </li>
-                  ))}
-                </ul>
+                <p className="text-sm text-muted-foreground">
+                  Assign a client to this project to link contacts.
+                </p>
               )}
             </CardContent>
           </Card>

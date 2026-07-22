@@ -46,7 +46,11 @@ function ChangeList({ body }: { body: string }) {
       );
     } catch {}
   }
-  return <p className="mt-0.5 truncate text-sm text-foreground/90">{body}</p>;
+  return (
+    <p className="mt-0.5 whitespace-pre-wrap break-words text-sm text-foreground/90">
+      {body}
+    </p>
+  );
 }
 
 const ICONS: Record<ActivityType, typeof FileText> = {
