@@ -15,7 +15,12 @@ export function Logo({
 }) {
   if (!showWord) {
     return (
-      <span className={cn("inline-flex h-7 w-7 items-center justify-center", className)}>
+      <span
+        className={cn(
+          "inline-flex h-7 w-7 items-center justify-center",
+          className,
+        )}
+      >
         <svg viewBox="0 0 100 100" className="h-full w-full" aria-label="Odigo">
           <polygon points="23,18.8 77,50 23,81.2" fill="#218884" />
         </svg>
@@ -29,13 +34,13 @@ export function Logo({
       <img
         src="/brand/odigo-logo-light-bg.svg"
         alt="Odigo Small Business"
-        className="block h-6 w-auto dark:hidden"
+        className="block h-10 lg:h-12 w-auto dark:hidden"
       />
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         src="/brand/odigo-logo-dark-bg.svg"
         alt="Odigo Small Business"
-        className="hidden h-6 w-auto dark:block"
+        className="hidden h-10 lg:h-12 w-auto dark:block"
       />
     </span>
   );
