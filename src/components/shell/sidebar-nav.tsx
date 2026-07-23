@@ -204,7 +204,7 @@ export function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
           </p>
           <CalendarConnectButton
             provider="google"
-            label="Google Calendar"
+            label="Google"
             connected={status?.google ?? false}
             accountEmail={status?.googleEmail ?? null}
             onConnected={refreshStatus}
@@ -212,7 +212,7 @@ export function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
           />
           <CalendarConnectButton
             provider="outlook"
-            label="Outlook Calendar"
+            label="Outlook"
             connected={status?.outlook ?? false}
             accountEmail={status?.outlookEmail ?? null}
             onConnected={refreshStatus}

@@ -1,6 +1,11 @@
 import { cn } from "@/lib/utils";
 
-/** Odigo wordmark — a precise, built mark. "O" rendered as a gold square ring. */
+/**
+ * Odigo brand mark. `showWord` renders the full SMB logo lockup (swapping
+ * light/dark-background variants with the active theme); otherwise just the
+ * Odigo arrow on its own, which the brand guidelines permit as a standalone
+ * touchstone mark.
+ */
 export function Logo({
   className,
   showWord = true,
@@ -8,16 +13,35 @@ export function Logo({
   className?: string;
   showWord?: boolean;
 }) {
-  return (
-    <span className={cn("flex items-center gap-2.5", className)}>
-      <span className="relative flex h-7 w-7 items-center justify-center rounded-[7px] border-2 border-gold">
-        <span className="h-2 w-2 rounded-[2px] bg-gold" />
+  if (!showWord) {
+    return (
+      <span
+        className={cn(
+          "inline-flex h-7 w-7 items-center justify-center",
+          className,
+        )}
+      >
+        <svg viewBox="0 0 100 100" className="h-full w-full" aria-label="Odigo">
+          <polygon points="23,18.8 77,50 23,81.2" fill="#218884" />
+        </svg>
       </span>
-      {showWord && (
-        <span className="text-[15px] font-semibold tracking-tight">
-          Odigo<span className="text-gold"> CRM</span>
-        </span>
-      )}
+    );
+  }
+
+  return (
+    <span className={cn("inline-flex items-center", className)}>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src="/brand/odigo-logo-light-bg.svg"
+        alt="Odigo Small Business"
+        className="block h-10 lg:h-12 w-auto dark:hidden"
+      />
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src="/brand/odigo-logo-dark-bg.svg"
+        alt="Odigo Small Business"
+        className="hidden h-10 lg:h-12 w-auto dark:block"
+      />
     </span>
   );
 }
