@@ -1,3 +1,5 @@
+import { cache } from "react";
+import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import {
@@ -36,8 +38,40 @@ import type {
   ActivityWithAuthor,
   Contact,
 } from "@/lib/types";
+import { STAGE_META } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
+
+// Shared with generateMetadata below via React's request-scoped cache, so
+// looking up the project by slug only hits the database once per request.
+const getProjectBySlug = cache(async (slug: string) => {
+  const supabase = await createClient();
+  const { data: project } = await supabase
+    .from("projects")
+    .select(
+      `*, company:companies(id, name, segment, slug), assignee:profiles!projects_assigned_to_fkey(id, full_name, email)`
+    )
+    .eq("slug", slug)
+    .single();
+  return project as unknown as (ProjectWithRelations & { company: any }) | null;
+});
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}): Promise<Metadata> {
+  const { slug } = await params;
+  const project = await getProjectBySlug(slug);
+  if (!project) return { title: "Project Not Found" };
+
+  const stageLabel = STAGE_META[project.stage]?.label ?? project.stage;
+  const company = project.company as { name: string } | null;
+  return {
+    title: project.name,
+    description: `${stageLabel} project${company ? ` for ${company.name}` : ""} — ${formatCurrency(Number(project.project_value))}.`,
+  };
+}
 
 export default async function ProjectDetailPage({
   params,
@@ -49,17 +83,9 @@ export default async function ProjectDetailPage({
   const profile = await getCurrentProfile();
   const isAdmin = profile?.role === "admin";
 
-  // Look up project by slug (not UUID)
-  const { data: project } = await supabase
-    .from("projects")
-    .select(
-      `*, company:companies(id, name, segment, slug), assignee:profiles!projects_assigned_to_fkey(id, full_name, email)`
-    )
-    .eq("slug", slug)
-    .single();
-
+  const project = await getProjectBySlug(slug);
   if (!project) notFound();
-  const p = project as unknown as ProjectWithRelations & { company: any };
+  const p = project;
 
   const [
     { data: activity },

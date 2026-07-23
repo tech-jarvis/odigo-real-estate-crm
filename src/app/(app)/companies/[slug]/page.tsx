@@ -1,3 +1,5 @@
+import { cache } from "react";
+import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import {
@@ -22,8 +24,37 @@ import { DeleteCompanyButton } from "./company-controls";
 import { DeleteContactButton } from "./delete-contact-button";
 import { formatCurrency } from "@/lib/utils";
 import type { Company, Contact, Project } from "@/lib/types";
+import { SEGMENT_META } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
+
+// Shared with generateMetadata below via React's request-scoped cache, so
+// looking up the company by slug only hits the database once per request.
+const getCompanyBySlug = cache(async (slug: string) => {
+  const supabase = await createClient();
+  const { data: company } = await supabase
+    .from("companies")
+    .select("*")
+    .eq("slug", slug)
+    .single();
+  return company as Company | null;
+});
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}): Promise<Metadata> {
+  const { slug } = await params;
+  const company = await getCompanyBySlug(slug);
+  if (!company) return { title: "Client Not Found" };
+
+  const segmentLabel = SEGMENT_META[company.segment]?.label ?? company.segment;
+  return {
+    title: company.name,
+    description: `${segmentLabel} client — company details, contacts, and projects for ${company.name}.`,
+  };
+}
 
 export default async function CompanyDetailPage({
   params,
@@ -35,15 +66,9 @@ export default async function CompanyDetailPage({
   const profile = await getCurrentProfile();
   const isAdmin = profile?.role === "admin";
 
-  // Look up company by slug (not UUID)
-  const { data: company } = await supabase
-    .from("companies")
-    .select("*")
-    .eq("slug", slug)
-    .single();
-
+  const company = await getCompanyBySlug(slug);
   if (!company) notFound();
-  const c = company as Company;
+  const c = company;
 
   const [{ data: contacts }, { data: projects }] = await Promise.all([
     supabase.from("contacts").select("*").eq("company_id", c.id).order("name"),

@@ -18,9 +18,21 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Odigo CRM",
+  metadataBase: new URL("https://real-estat-crm.vercel.app"),
+  title: {
+    default: "Odigo CRM",
+    template: "%s | Odigo CRM",
+  },
   description:
     "Internal CRM for The Odigo Group — projects, clients, and activity in one place.",
+  applicationName: "Odigo CRM",
+  // Internal tool with client data — never index it.
+  robots: { index: false, follow: false, nocache: true },
+  openGraph: {
+    siteName: "Odigo CRM",
+    type: "website",
+    locale: "en_US",
+  },
 };
 
 export default function RootLayout({

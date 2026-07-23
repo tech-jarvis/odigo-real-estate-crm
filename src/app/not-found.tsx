@@ -1,6 +1,12 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/shared/logo";
+
+export const metadata: Metadata = {
+  title: "Page Not Found",
+  description: "The page or record you're looking for doesn't exist.",
+};
 
 export default function NotFound() {
   return (

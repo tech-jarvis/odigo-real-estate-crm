@@ -1,5 +1,11 @@
+import type { Metadata } from "next";
 import { LoginForm } from "./login-form";
 import { Logo } from "@/components/shared/logo";
+
+export const metadata: Metadata = {
+  title: "Sign In",
+  description: "Sign in to the Odigo project workspace.",
+};
 
 export default function LoginPage() {
   return (
