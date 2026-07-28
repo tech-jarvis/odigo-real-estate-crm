@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils";
 import { useTheme, type Accent } from "./theme-provider";
 
 const ACCENTS: { id: Accent; label: string; hsl: string }[] = [
-  { id: "gold",    label: "Gold",    hsl: "38 62% 56%"  },
+  { id: "teal",    label: "Teal",    hsl: "178 61% 37%" },
   { id: "blue",    label: "Blue",    hsl: "215 65% 58%" },
   { id: "emerald", label: "Emerald", hsl: "158 55% 47%" },
   { id: "rose",    label: "Rose",    hsl: "346 68% 60%" },

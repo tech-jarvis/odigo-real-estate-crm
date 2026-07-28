@@ -3,9 +3,9 @@
 import { createContext, useContext, useEffect, useState } from "react";
 
 export type Theme = "dark" | "light";
-export type Accent = "gold" | "blue" | "emerald" | "rose" | "violet";
+export type Accent = "teal" | "blue" | "emerald" | "rose" | "violet";
 
-const ACCENT_IDS: Accent[] = ["gold", "blue", "emerald", "rose", "violet"];
+const ACCENT_IDS: Accent[] = ["teal", "blue", "emerald", "rose", "violet"];
 
 interface ThemeContextValue {
   theme: Theme;
@@ -16,7 +16,7 @@ interface ThemeContextValue {
 
 const ThemeContext = createContext<ThemeContextValue>({
   theme: "dark",
-  accent: "gold",
+  accent: "teal",
   setTheme: () => {},
   setAccent: () => {},
 });
@@ -27,12 +27,12 @@ export function useTheme() {
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [theme, setThemeState] = useState<Theme>("dark");
-  const [accent, setAccentState] = useState<Accent>("gold");
+  const [accent, setAccentState] = useState<Accent>("teal");
 
   useEffect(() => {
     const html = document.documentElement;
     const t = html.classList.contains("light") ? "light" : "dark";
-    const a = (ACCENT_IDS.find((id) => html.classList.contains(`accent-${id}`)) ?? "gold") as Accent;
+    const a = (ACCENT_IDS.find((id) => html.classList.contains(`accent-${id}`)) ?? "teal") as Accent;
     setThemeState(t);
     setAccentState(a);
   }, []);

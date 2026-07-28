@@ -41,7 +41,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={`${inter.variable} ${geistMono.variable} font-sans`}>
-        <Script id="odigo-theme-init" strategy="beforeInteractive">{`(function(){try{var t=localStorage.getItem('odigo-theme')||'dark';var a=localStorage.getItem('odigo-accent')||'gold';document.documentElement.classList.add(t,'accent-'+a);}catch(e){}})();`}</Script>
+        <Script id="odigo-theme-init" strategy="beforeInteractive">{`(function(){try{var t=localStorage.getItem('odigo-theme')||'dark';var a=localStorage.getItem('odigo-accent')||'teal';document.documentElement.classList.add(t,'accent-'+a);}catch(e){}})();`}</Script>
         <QueryProvider>
           <ThemeProvider>
             {children}

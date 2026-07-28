@@ -14,8 +14,11 @@
     --popover: 24 9% 10%;
     --popover-foreground: 40 12% 92%;
 
-    --primary: 38 60% 55%;
-    --primary-foreground: 24 20% 10%;
+    /* Odigo brand teal (Pantone P 123-6 U / #218884), the SMB logo's mark
+       color, lifted a few points of lightness from the literal brand hex
+       so it clears WCAG AA contrast as UI text on this dark background. */
+    --primary: 178 61% 37%;
+    --primary-foreground: 178 40% 97%;
 
     --secondary: 24 6% 16%;
     --secondary-foreground: 40 10% 88%;
@@ -31,10 +34,10 @@
 
     --border: 30 6% 18%;
     --input: 30 6% 20%;
-    --ring: 38 60% 55%;
+    --ring: 178 61% 37%;
 
-    --gold: 38 62% 56%;
-    --gold-muted: 38 30% 40%;
+    --gold: 178 61% 37%;
+    --gold-muted: 178 30% 25%;
 
     --radius: 0.625rem;
     --font-mono: var(--font-geist-mono);
