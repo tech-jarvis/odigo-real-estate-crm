@@ -58,15 +58,29 @@ drop policy "contacts_select_auth" on public.contacts;
 create policy "contacts_select_org" on public.contacts
   for select to authenticated using (org_id = public.current_org_id());
 
+-- Also validates that company_id's org matches — company_id is NOT NULL, so it's always required.
 drop policy "contacts_insert_admin" on public.contacts;
 create policy "contacts_insert_admin" on public.contacts
-  for insert to authenticated with check (public.is_admin() and org_id = public.current_org_id());
+  for insert to authenticated with check (
+    public.is_admin() and org_id = public.current_org_id()
+    and exists (
+      select 1 from public.companies c
+      where c.id = contacts.company_id and c.org_id = public.current_org_id()
+    )
+  );
 
+-- Also validates that company_id's org matches — company_id is NOT NULL, so it's always required.
 drop policy "contacts_update_admin" on public.contacts;
 create policy "contacts_update_admin" on public.contacts
   for update to authenticated
   using (public.is_admin() and org_id = public.current_org_id())
-  with check (public.is_admin() and org_id = public.current_org_id());
+  with check (
+    public.is_admin() and org_id = public.current_org_id()
+    and exists (
+      select 1 from public.companies c
+      where c.id = contacts.company_id and c.org_id = public.current_org_id()
+    )
+  );
 
 drop policy "contacts_delete_admin" on public.contacts;
 create policy "contacts_delete_admin" on public.contacts
@@ -77,15 +91,35 @@ drop policy "projects_select_auth" on public.projects;
 create policy "projects_select_org" on public.projects
   for select to authenticated using (org_id = public.current_org_id());
 
+-- Also validates that company_id's org matches when set — company_id is nullable, so null is allowed through.
 drop policy "projects_insert_admin" on public.projects;
 create policy "projects_insert_admin" on public.projects
-  for insert to authenticated with check (public.is_admin() and org_id = public.current_org_id());
+  for insert to authenticated with check (
+    public.is_admin() and org_id = public.current_org_id()
+    and (
+      company_id is null
+      or exists (
+        select 1 from public.companies c
+        where c.id = projects.company_id and c.org_id = public.current_org_id()
+      )
+    )
+  );
 
+-- Also validates that company_id's org matches when set — company_id is nullable, so null is allowed through.
 drop policy "projects_update_admin" on public.projects;
 create policy "projects_update_admin" on public.projects
   for update to authenticated
   using (public.is_admin() and org_id = public.current_org_id())
-  with check (public.is_admin() and org_id = public.current_org_id());
+  with check (
+    public.is_admin() and org_id = public.current_org_id()
+    and (
+      company_id is null
+      or exists (
+        select 1 from public.companies c
+        where c.id = projects.company_id and c.org_id = public.current_org_id()
+      )
+    )
+  );
 
 drop policy "projects_delete_admin" on public.projects;
 create policy "projects_delete_admin" on public.projects
@@ -101,12 +135,18 @@ create policy "project_contacts_select_org" on public.project_contacts
     )
   );
 
+-- Also validates that contact_id's org matches, not just project_id's org.
 drop policy "project_contacts_insert_admin" on public.project_contacts;
 create policy "project_contacts_insert_admin" on public.project_contacts
   for insert to authenticated with check (
-    public.is_admin() and exists (
+    public.is_admin()
+    and exists (
       select 1 from public.projects p
       where p.id = project_contacts.project_id and p.org_id = public.current_org_id()
+    )
+    and exists (
+      select 1 from public.contacts ct
+      where ct.id = project_contacts.contact_id and ct.org_id = public.current_org_id()
     )
   );
 
@@ -124,7 +164,14 @@ drop policy "activity_select_auth" on public.activity_log;
 create policy "activity_select_org" on public.activity_log
   for select to authenticated using (org_id = public.current_org_id());
 
+-- Also validates that project_id's org matches the inserted org_id, not just the row's own org_id.
 drop policy "activity_insert_admin" on public.activity_log;
 create policy "activity_insert_admin" on public.activity_log
   for insert to authenticated
-  with check (public.is_admin() and author_id = auth.uid() and org_id = public.current_org_id());
+  with check (
+    public.is_admin() and author_id = auth.uid() and org_id = public.current_org_id()
+    and exists (
+      select 1 from public.projects p
+      where p.id = activity_log.project_id and p.org_id = public.current_org_id()
+    )
+  );
