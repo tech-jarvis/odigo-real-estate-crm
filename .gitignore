@@ -30,6 +30,9 @@ mcp-server/dist/
 # vercel
 .vercel
 
+# worktrees
+.worktrees
+
 # typescript
 *.tsbuildinfo
 
