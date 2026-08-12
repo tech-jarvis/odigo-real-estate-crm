@@ -812,7 +812,9 @@ cd /Users/saadee/Desktop/workspace/Devsinc/Odigo/odigo-mcp
 npm run lint
 ```
 
-Expected: fails right now with "Property 'orgId' is missing" errors in `tools/read.ts`, `tools/write.ts`, `tools/outreach.ts`, `tools/sweep.ts` call sites and in the 4 test files that build `AuthContext` objects — that's expected; Tasks 8–12 fix each in turn. Confirm the *only* errors are exactly those missing-`orgId` errors (no unrelated typos).
+> **Addendum (discovered during execution):** the original expectation below was wrong on two counts. First, `read.ts`/`sweep.ts` don't consume `AuthContext` at all yet — they're still the static-array shape from before this plan — so there's no call site where a missing `orgId` could surface; that only becomes possible once Tasks 8/9 convert them into factories. Second, `tsconfig.json` excludes `tests/`, so `npm run lint` (`tsc --noEmit`) never type-checks test files regardless of what they construct — the "4 test files" this step predicted would fail don't get type-checked by this command at all (they'd only fail at `vitest` runtime if the missing field were actually read, and at this point in the plan nothing reads `auth.orgId` yet either).
+>
+> **Corrected expectation:** `npm run lint` shows exactly the same 2 errors as at the end of Task 6 (`write.ts:39`, `outreach.ts:272` — both pre-existing from Task 5, both `org_id` missing on an `activity_log` insert, neither caused by or fixed by this task) and nothing else. That's the actual verification bar for Task 7: confirm this task's 4 edits introduce zero *new* errors, full stop — there is no intermediate "now more things fail" state to check for, because nothing yet consumes the widened `AuthContext` in a way that would surface it. Tasks 8–11 each update both their tool file and their test file together, so the "orgId missing" errors this step originally expected to see now simply won't exist as a separate observable state — they get introduced and fixed within the same later task, not exposed here.
 
 - [ ] **Step 6: Commit**
 
