@@ -499,6 +499,29 @@ cd real-estat-crm && npx tsc --noEmit
 
 Expected (revised per the addendum above): `real-estat-crm` exits 0 except for exactly 2 pre-existing, unrelated `slug`-required errors in `companies/actions.ts` and `pipeline/actions.ts` (tracked separately, not fixed here). `odigo-mcp` exits non-zero with exactly 2 errors, both `org_id` missing on `activity_log` inserts in `write.ts:39` and `outreach.ts:272` (expected — Tasks 10/11 fix these). Confirm no *other* errors exist beyond exactly these 4 known ones in total across both repos — any additional error is a real regression and should stop and be reported, not waved through.
 
+> **Second addendum (discovered during execution):** the DB-level `org_id` default in Step 0 is schema-wide, not role-scoped — Postgres has no concept of "optional for the anon-key client, required for the service-role client." Regenerating types after Step 0 therefore made `org_id` optional in *both* repos' generated `Insert` types, silently removing the compile-time guardrail that used to catch a missing `org_id` in `odigo-mcp`'s service-role writes (which get no benefit from the default — there's no `auth.uid()` session for `current_org_id()` to resolve there). Fixed by hand-authoring a local type override in `odigo-mcp/src/lib/supabase.ts` (not touching the generated file) that re-requires `org_id: string` on the `Insert` shape of the same 5 tables, specifically for the client exported from that file:
+> ```typescript
+> import { createClient } from '@supabase/supabase-js'
+> import type { Database as GeneratedDatabase } from './database.types.js'
+>
+> type OrgScopedTable = 'profiles' | 'companies' | 'contacts' | 'projects' | 'activity_log'
+>
+> type Database = Omit<GeneratedDatabase, 'public'> & {
+>   public: Omit<GeneratedDatabase['public'], 'Tables'> & {
+>     Tables: {
+>       [K in keyof GeneratedDatabase['public']['Tables']]: K extends OrgScopedTable
+>         ? Omit<GeneratedDatabase['public']['Tables'][K], 'Insert'> & {
+>             Insert: GeneratedDatabase['public']['Tables'][K]['Insert'] & { org_id: string }
+>           }
+>         : GeneratedDatabase['public']['Tables'][K]
+>     }
+>   }
+> }
+> ```
+> First attempt reconstructed `Database` from scratch (`type Database = { public: ... }`) instead of `Omit`-ing off the generated type, which silently dropped the generated `__InternalSupabase: { PostgrestVersion: "14.5" }` sibling key — `supabase-js`'s `createClient<Database>()` reads that key to infer the PostgREST version and falls back to `'12'` when it's absent, silently gating version-13+-only client features even though the live server is 14.5. Fixed by using `Omit<GeneratedDatabase, 'public'>` (shown above) instead, which lets every other top-level key — including `__InternalSupabase` — pass through untouched. Verified by tracing the consumption path in `@supabase/supabase-js`'s `SupabaseClient.ts` and confirming the literal type resolves to `"14.5"`, not the fallback.
+>
+> This guardrail is genuinely load-bearing, not theoretical: it's what makes `write.ts:39` and `outreach.ts:272` fail to compile right now (see Step 2's expected output) — exactly the bug Tasks 10/11 exist to fix. Without it, that same class of bug could ship silently in a future MCP write tool between now and whenever someone happens to test it at runtime.
+
 - [ ] **Step 3: Commit**
 
 ```bash
@@ -507,9 +530,11 @@ git add supabase/18_org_id_defaults.sql src/lib/database.types.ts
 git commit -m "feat(db): default org_id to the caller's own org for RLS-authenticated inserts"
 
 cd odigo-mcp
-git add src/lib/database.types.ts
-git commit -m "chore: regenerate database types for organizations/org_id"
+git add src/lib/database.types.ts src/lib/supabase.ts
+git commit -m "chore: regenerate database types; re-require org_id on service-role inserts"
 ```
+
+(Actual execution used one additional follow-up commit in `odigo-mcp` to fix the `__InternalSupabase` regression described above — `fix: preserve __InternalSupabase PostgrestVersion in the org-scoped type override` — after a code review caught it. Final `odigo-mcp` state for this task: types regen + guardrail + that fix, 2 commits total beyond the branch base.)
 
 ---
 
