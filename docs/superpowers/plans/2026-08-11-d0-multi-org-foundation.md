@@ -2014,6 +2014,11 @@ git add tests/org-isolation.spec.js
 git commit -m "test: add Playwright cross-org RLS isolation suite"
 ```
 
+> **Addendum (discovered during execution/review):** two corrections to the above.
+>
+> 1. The token-extraction code in test 3 (elided above as "[token extraction]" in review, but present in full in the actual committed file) originally assumed a localStorage-based Supabase session. This app uses `@supabase/ssr`'s cookie-based sessions instead — fixed by reading `storage.cookies` (finding the `auth-token` cookie, stripping its `base64-` prefix, base64-decoding, then parsing) instead of `storage.origins[].localStorage`. The actual RLS assertions (`toContain`/`not.toContain`) are unchanged; only how `accessToken` gets extracted differs.
+> 2. Step 2's claim that the env vars are "already required by the app itself, so this is just 'the app must be runnable'" is wrong — the dev server and the Playwright test runner are separate Node processes, and only the former auto-loads `.env.local` (via Next.js). Without `NEXT_PUBLIC_SUPABASE_URL`/`NEXT_PUBLIC_SUPABASE_ANON_KEY` manually exported into the same shell running `npx playwright test`, test 3 fails with a misleading `SyntaxError: Unexpected token '<'` (the request silently resolves against Playwright's own `baseURL` instead of Supabase). Fixed with a follow-up commit adding `dotenv` as a devDependency and loading `.env.local` at the top of `playwright.config.ts`, so `npx playwright test` now works standalone with no manual env-export step required.
+
 ---
 
 ### Task 15: Full verification pass
