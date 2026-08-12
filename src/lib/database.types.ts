@@ -21,6 +21,7 @@ export type Database = {
           created_at: string
           file_url: string | null
           id: string
+          org_id: string
           project_id: string
           type: Database["public"]["Enums"]["activity_type"]
         }
@@ -30,6 +31,7 @@ export type Database = {
           created_at?: string
           file_url?: string | null
           id?: string
+          org_id?: string
           project_id: string
           type?: Database["public"]["Enums"]["activity_type"]
         }
@@ -39,6 +41,7 @@ export type Database = {
           created_at?: string
           file_url?: string | null
           id?: string
+          org_id?: string
           project_id?: string
           type?: Database["public"]["Enums"]["activity_type"]
         }
@@ -48,6 +51,13 @@ export type Database = {
             columns: ["author_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "activity_log_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
           {
@@ -90,6 +100,7 @@ export type Database = {
           industry: string | null
           name: string
           notes: string | null
+          org_id: string
           phone: string | null
           primary_contact: string | null
           segment: Database["public"]["Enums"]["company_segment"]
@@ -105,10 +116,11 @@ export type Database = {
           industry?: string | null
           name: string
           notes?: string | null
+          org_id?: string
           phone?: string | null
           primary_contact?: string | null
           segment: Database["public"]["Enums"]["company_segment"]
-          slug?: string
+          slug: string
           updated_at?: string
         }
         Update: {
@@ -120,13 +132,22 @@ export type Database = {
           industry?: string | null
           name?: string
           notes?: string | null
+          org_id?: string
           phone?: string | null
           primary_contact?: string | null
           segment?: Database["public"]["Enums"]["company_segment"]
           slug?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "companies_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       contacts: {
         Row: {
@@ -135,6 +156,7 @@ export type Database = {
           email: string | null
           id: string
           name: string
+          org_id: string
           phone: string | null
           role: string | null
           updated_at: string
@@ -145,6 +167,7 @@ export type Database = {
           email?: string | null
           id?: string
           name: string
+          org_id?: string
           phone?: string | null
           role?: string | null
           updated_at?: string
@@ -155,6 +178,7 @@ export type Database = {
           email?: string | null
           id?: string
           name?: string
+          org_id?: string
           phone?: string | null
           role?: string | null
           updated_at?: string
@@ -165,6 +189,13 @@ export type Database = {
             columns: ["company_id"]
             isOneToOne: false
             referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contacts_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
         ]
@@ -226,12 +257,34 @@ export type Database = {
         }
         Relationships: []
       }
+      organizations: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          slug: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          slug: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          slug?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
           email: string | null
           full_name: string | null
           id: string
+          org_id: string
           role: Database["public"]["Enums"]["user_role"]
         }
         Insert: {
@@ -239,6 +292,7 @@ export type Database = {
           email?: string | null
           full_name?: string | null
           id: string
+          org_id?: string
           role?: Database["public"]["Enums"]["user_role"]
         }
         Update: {
@@ -246,9 +300,18 @@ export type Database = {
           email?: string | null
           full_name?: string | null
           id?: string
+          org_id?: string
           role?: Database["public"]["Enums"]["user_role"]
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "profiles_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       project_contacts: {
         Row: {
@@ -293,6 +356,7 @@ export type Database = {
           estimated_end_date: string | null
           id: string
           name: string
+          org_id: string
           project_value: number
           slug: string
           stage: Database["public"]["Enums"]["project_stage"]
@@ -309,8 +373,9 @@ export type Database = {
           estimated_end_date?: string | null
           id?: string
           name: string
+          org_id?: string
           project_value?: number
-          slug?: string
+          slug: string
           stage?: Database["public"]["Enums"]["project_stage"]
           start_date?: string | null
           status_note?: string | null
@@ -325,6 +390,7 @@ export type Database = {
           estimated_end_date?: string | null
           id?: string
           name?: string
+          org_id?: string
           project_value?: number
           slug?: string
           stage?: Database["public"]["Enums"]["project_stage"]
@@ -347,6 +413,13 @@ export type Database = {
             referencedRelation: "companies"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "projects_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
         ]
       }
     }
@@ -360,6 +433,7 @@ export type Database = {
         Returns: undefined
       }
       cleanup_expired_mcp_auth_codes: { Args: never; Returns: undefined }
+      current_org_id: { Args: never; Returns: string }
       is_admin: { Args: never; Returns: boolean }
       slugify: { Args: { input_text: string }; Returns: string }
     }
