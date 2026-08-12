@@ -1745,6 +1745,8 @@ git commit -m "feat: org-scope outreach project/contact/activity_log lookups"
 
 ### Task 12: Wire the factories into `mcp-server.ts`
 
+> **Addendum (discovered during execution):** this task is already satisfied. Tasks 8 and 9 each had to wire their own factory into `mcp-server.ts` as part of landing (the old static `readTools`/`sweepTools` exports stopped existing the moment those files became factories, so the build would break otherwise) — the same necessity `write.ts`/`outreach.ts` already established before D0 started. By the time Task 11 lands, `mcp-server.ts` will already import and call all four factories exactly as this task's diff below prescribes. There is nothing left for this task to do beyond confirming that state and folding straight into Task 15's full verification pass — do not attempt to reapply the diff below, it won't apply cleanly against an already-correct file.
+
 **Files:**
 - Modify: `odigo-mcp/src/lib/mcp-server.ts:6-9, 26-29`
 
