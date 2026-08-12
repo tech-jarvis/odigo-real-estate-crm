@@ -1899,6 +1899,8 @@ npm run test:integration
 
 Expected: PASS, 4/4. If `get_company` for the Enterprise company from an SMB context does *not* error, or the SMB search leaks Enterprise data, that's a real cross-org bug in an earlier task — stop and fix it there before continuing (this test suite is the actual proof the boundary holds; a passing unit-test-only suite up to this point does not confirm that on its own).
 
+> **Addendum (discovered during review):** the original `search_contacts` test above only asserted that an SMB-scoped search finds the SMB org's own contact — it never asserted anything about Enterprise-org contacts, and at the time the Enterprise org had zero seeded contacts, so no negative assertion could have caught a leak even if one existed. Fixed with a new migration, `real-estat-crm/supabase/19_org_isolation_seed_contact.sql`, seeding one real Enterprise-org contact (`22222222-2222-2222-2222-222222222222`, "Enterprise Test Contact"), and replacing the single test with three (mirroring the `get_company` can't-see-foreign / can-see-own / positive-control pattern): SMB sees its own contact, SMB gets `[]` searching for the Enterprise contact by name, Enterprise can find its own. **Corrected expected result: PASS, 6/6** (not 4/4).
+
 - [ ] **Step 4: Confirm the default `npm test` still skips this file**
 
 ```bash
