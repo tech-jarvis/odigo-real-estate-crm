@@ -432,6 +432,59 @@ git commit -m "test(db): seed an Odigo Enterprise admin + company for cross-org 
 **Files:**
 - Modify: `odigo-mcp/src/lib/database.types.ts`
 - Modify: `real-estat-crm/src/lib/database.types.ts`
+- Create: `real-estat-crm/supabase/18_org_id_defaults.sql`
+
+> **Addendum (discovered during execution):** the original Step 2 below assumed "nothing should break yet" — wrong. `org_id NOT NULL` with no column default (migration 15) breaks TypeScript's structural check on every existing `.insert()` call site into the 5 org-scoped tables, regardless of whether that code references `org_id`. Two classes of breakage:
+> - `odigo-mcp/src/tools/write.ts:39` and `odigo-mcp/src/tools/outreach.ts:272` (activity_log inserts) — expected, temporary. Tasks 10/11 (later in this plan) fix these by routing through `orgScoped()`.
+> - `real-estat-crm`'s own Server Actions — `src/app/(app)/companies/actions.ts` (company + contact inserts), `src/app/(app)/pipeline/actions.ts` (project + activity_log inserts), `src/app/(app)/pipeline/[slug]/activity-actions.ts` (activity_log insert) — a genuine plan gap: no task in this plan otherwise touches the CRM's own UI-driven writes, only the MCP server's. Fixed by Step 0 below (a DB-level default), not by editing these files.
+>
+> A separate, pre-existing, unrelated issue was also uncovered incidentally: `companies.slug`/`projects.slug` are `NOT NULL` with no DB default (only trigger-populated per `07_stable_slugs.sql`), which the previously-checked-in (stale) types file incorrectly hid. This is **not** a D0/multi-org issue — flagged separately for a standalone fix. Task 5's verification (Step 2 below) treats the resulting 2 `slug`-only errors (`companies/actions.ts`, `pipeline/actions.ts`) as pre-existing/out-of-scope, not something this task fixes.
+
+- [ ] **Step 0: Add `org_id` DB defaults (new — closes the gap above)**
+
+```sql
+-- ============================================================
+-- Odigo CRM — org_id column defaults (18)
+--
+-- Adds `default public.current_org_id()` to the 5 org_id columns added in
+-- migration 15. This is a convenience default for RLS-authenticated
+-- callers (the CRM app, using the anon key under a real user session) —
+-- any insert that omits org_id gets it auto-populated to the inserting
+-- user's own org, so the CRM's existing Server Actions (companies/actions.ts,
+-- pipeline/actions.ts, pipeline/[slug]/activity-actions.ts) don't need
+-- code changes to keep working now that org_id is NOT NULL.
+--
+-- This does NOT help the MCP server's service-role writes — service-role
+-- connections have no auth.uid() session, so current_org_id() evaluates to
+-- NULL there and the NOT NULL constraint still applies. That's intentional:
+-- MCP write tools (Tasks 6-12) explicitly set org_id via the orgScoped()
+-- helper rather than relying on this default, since there's no session to
+-- default from.
+--
+-- Security note: this is a convenience default only, not a new trust
+-- boundary. A caller who explicitly supplies a mismatched org_id bypasses
+-- the default entirely, and migration 16's RLS with_check policies (org_id
+-- = current_org_id()) still reject it — the default can only ever land a
+-- row in the caller's own org, never someone else's.
+-- ============================================================
+
+alter table public.profiles     alter column org_id set default public.current_org_id();
+alter table public.companies    alter column org_id set default public.current_org_id();
+alter table public.contacts     alter column org_id set default public.current_org_id();
+alter table public.projects     alter column org_id set default public.current_org_id();
+alter table public.activity_log alter column org_id set default public.current_org_id();
+```
+
+Write this as `real-estat-crm/supabase/18_org_id_defaults.sql`, apply via `apply_migration` (`name: "18_org_id_defaults"`), then verify with `execute_sql`:
+
+```sql
+select table_name, column_default
+from information_schema.columns
+where table_schema = 'public' and column_name = 'org_id'
+order by table_name;
+```
+
+Expected: all 5 rows show `column_default` containing `current_org_id()`.
 
 - [ ] **Step 1: Regenerate**
 
@@ -440,20 +493,20 @@ Use the Supabase MCP tool `generate_typescript_types` with `project_id: "xkczzuo
 - [ ] **Step 2: Verify both repos still typecheck**
 
 ```bash
-cd /Users/saadee/Desktop/workspace/Devsinc/Odigo/odigo-mcp && npm run lint
-cd /Users/saadee/Desktop/workspace/Devsinc/Odigo/real-estat-crm && npx tsc --noEmit
+cd odigo-mcp && npm run lint
+cd real-estat-crm && npx tsc --noEmit
 ```
 
-Expected: both exit 0. (`organizations` table and `org_id` columns are now typed but not yet referenced by any application code — the type surface just grows, nothing should break yet.)
+Expected (revised per the addendum above): `real-estat-crm` exits 0 except for exactly 2 pre-existing, unrelated `slug`-required errors in `companies/actions.ts` and `pipeline/actions.ts` (tracked separately, not fixed here). `odigo-mcp` exits non-zero with exactly 2 errors, both `org_id` missing on `activity_log` inserts in `write.ts:39` and `outreach.ts:272` (expected — Tasks 10/11 fix these). Confirm no *other* errors exist beyond exactly these 4 known ones in total across both repos — any additional error is a real regression and should stop and be reported, not waved through.
 
 - [ ] **Step 3: Commit**
 
 ```bash
-cd /Users/saadee/Desktop/workspace/Devsinc/Odigo/odigo-mcp
-git add src/lib/database.types.ts
-git commit -m "chore: regenerate database types for organizations/org_id"
+cd real-estat-crm
+git add supabase/18_org_id_defaults.sql src/lib/database.types.ts
+git commit -m "feat(db): default org_id to the caller's own org for RLS-authenticated inserts"
 
-cd /Users/saadee/Desktop/workspace/Devsinc/Odigo/real-estat-crm
+cd odigo-mcp
 git add src/lib/database.types.ts
 git commit -m "chore: regenerate database types for organizations/org_id"
 ```
