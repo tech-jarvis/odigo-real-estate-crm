@@ -33,6 +33,7 @@ export async function createCompany(formData: FormData): Promise<Result> {
 
   const { error } = await supabase.from("companies").insert({
     name,
+    slug: "",
     segment: (n(formData.get("segment")) ?? "residential") as CompanySegment,
     address: n(formData.get("address")),
     primary_contact: n(formData.get("primary_contact")),

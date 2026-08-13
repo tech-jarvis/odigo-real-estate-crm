@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState, useCallback } from "react";
-import { LayoutDashboard, KanbanSquare, Building2, Calendar, CheckCircle2, Loader2, X } from "lucide-react";
+import { LayoutDashboard, KanbanSquare, Building2, Calendar, CheckCircle2, Loader2, X, Users, Shield } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useRole } from "@/components/shared/role-context";
 import {
@@ -196,6 +196,37 @@ export function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
           </Link>
         );
       })}
+
+      {isAdmin && (
+        <div className="mt-4 pt-4 border-t border-border">
+          <p className="px-3 mb-1 text-[11px] font-medium uppercase tracking-wider text-muted-foreground/50">
+            Settings
+          </p>
+          {[
+            { href: "/settings/members", label: "Members", icon: Users },
+            { href: "/settings/roles", label: "Roles", icon: Shield },
+          ].map((item) => {
+            const active = pathname.startsWith(item.href);
+            const Icon = item.icon;
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                onClick={onNavigate}
+                className={cn(
+                  "group flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-all duration-150",
+                  active
+                    ? "bg-secondary text-foreground"
+                    : "text-muted-foreground hover:bg-secondary/50 hover:text-foreground"
+                )}
+              >
+                <Icon className={cn("h-4 w-4", active ? "text-gold" : "text-muted-foreground group-hover:text-foreground")} />
+                {item.label}
+              </Link>
+            );
+          })}
+        </div>
+      )}
 
       {isAdmin && (
         <div className="mt-4 pt-4 border-t border-border">

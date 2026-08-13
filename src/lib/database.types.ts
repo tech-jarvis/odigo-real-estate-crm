@@ -226,12 +226,123 @@ export type Database = {
         }
         Relationships: []
       }
+      invitations: {
+        Row: {
+          accepted_at: string | null
+          cancelled_at: string | null
+          created_at: string
+          crm_role: Database["public"]["Enums"]["user_role"]
+          email: string
+          expires_at: string
+          id: string
+          invited_by: string | null
+          org_id: string
+          org_role_id: string | null
+          token: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          cancelled_at?: string | null
+          created_at?: string
+          crm_role?: Database["public"]["Enums"]["user_role"]
+          email: string
+          expires_at?: string
+          id?: string
+          invited_by?: string | null
+          org_id: string
+          org_role_id?: string | null
+          token?: string
+        }
+        Update: {
+          accepted_at?: string | null
+          cancelled_at?: string | null
+          created_at?: string
+          crm_role?: Database["public"]["Enums"]["user_role"]
+          email?: string
+          expires_at?: string
+          id?: string
+          invited_by?: string | null
+          org_id?: string
+          org_role_id?: string | null
+          token?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invitations_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invitations_org_role_id_fkey"
+            columns: ["org_role_id"]
+            isOneToOne: false
+            referencedRelation: "org_roles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      organizations: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          slug: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          slug: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          slug?: string
+        }
+        Relationships: []
+      }
+      org_roles: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          org_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          org_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          org_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "org_roles_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           created_at: string
           email: string | null
           full_name: string | null
           id: string
+          is_super_admin: boolean
+          must_change_password: boolean
+          org_id: string | null
+          org_role_id: string | null
           role: Database["public"]["Enums"]["user_role"]
         }
         Insert: {
@@ -239,6 +350,10 @@ export type Database = {
           email?: string | null
           full_name?: string | null
           id: string
+          is_super_admin?: boolean
+          must_change_password?: boolean
+          org_id?: string | null
+          org_role_id?: string | null
           role?: Database["public"]["Enums"]["user_role"]
         }
         Update: {
@@ -246,9 +361,51 @@ export type Database = {
           email?: string | null
           full_name?: string | null
           id?: string
+          is_super_admin?: boolean
+          must_change_password?: boolean
+          org_id?: string | null
+          org_role_id?: string | null
           role?: Database["public"]["Enums"]["user_role"]
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "profiles_org_id_fk"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "profiles_org_role_id_fk"
+            columns: ["org_role_id"]
+            isOneToOne: false
+            referencedRelation: "org_roles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      role_permissions: {
+        Row: {
+          permission: Database["public"]["Enums"]["permission_key"]
+          role_id: string
+        }
+        Insert: {
+          permission: Database["public"]["Enums"]["permission_key"]
+          role_id: string
+        }
+        Update: {
+          permission?: Database["public"]["Enums"]["permission_key"]
+          role_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "role_permissions_role_id_fkey"
+            columns: ["role_id"]
+            isOneToOne: false
+            referencedRelation: "org_roles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       project_contacts: {
         Row: {
@@ -361,6 +518,8 @@ export type Database = {
       }
       cleanup_expired_mcp_auth_codes: { Args: never; Returns: undefined }
       is_admin: { Args: never; Returns: boolean }
+      is_super_admin: { Args: never; Returns: boolean }
+      my_org_id: { Args: never; Returns: string | null }
       slugify: { Args: { input_text: string }; Returns: string }
     }
     Enums: {
@@ -370,6 +529,11 @@ export type Database = {
         | "file_reference"
         | "call_summary"
       company_segment: "residential" | "commercial" | "industrial"
+      permission_key:
+        | "view_projects"   | "create_projects"  | "edit_projects"   | "delete_projects"
+        | "view_companies"  | "create_companies" | "edit_companies"  | "delete_companies"
+        | "view_contacts"   | "create_contacts"  | "edit_contacts"   | "delete_contacts"
+        | "view_activity"   | "manage_members"   | "manage_roles"
       project_stage: "lead" | "proposal" | "active" | "completed"
       user_role: "admin" | "viewer"
     }
@@ -506,6 +670,12 @@ export const Constants = {
         "call_summary",
       ],
       company_segment: ["residential", "commercial", "industrial"],
+      permission_key: [
+        "view_projects",   "create_projects",  "edit_projects",   "delete_projects",
+        "view_companies",  "create_companies", "edit_companies",  "delete_companies",
+        "view_contacts",   "create_contacts",  "edit_contacts",   "delete_contacts",
+        "view_activity",   "manage_members",   "manage_roles",
+      ],
       project_stage: ["lead", "proposal", "active", "completed"],
       user_role: ["admin", "viewer"],
     },

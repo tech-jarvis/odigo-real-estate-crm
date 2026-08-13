@@ -62,6 +62,7 @@ export async function createProject(formData: FormData): Promise<ActionResult> {
     .from("projects")
     .insert({
       name,
+      slug: "",
       company_id: n(formData.get("company_id")),
       stage,
       start_date: n(formData.get("start_date")),

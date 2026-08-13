@@ -1,6 +1,7 @@
 import type { Tables, Enums } from "./database.types";
 
 export type Profile = Tables<"profiles">;
+
 export type Company = Tables<"companies">;
 export type Contact = Tables<"contacts">;
 export type Project = Tables<"projects">;
@@ -24,6 +25,81 @@ export type CompanyWithContacts = Company & {
 export type ActivityWithAuthor = ActivityEntry & {
   author: Pick<Profile, "id" | "full_name" | "email"> | null;
   project?: Pick<Project, "id" | "name" | "slug"> | null;
+};
+
+// ---------- Multi-org types (migration 14) ----------
+
+export type Organization = {
+  id: string;
+  name: string;
+  slug: string;
+  created_at: string;
+};
+
+export type OrgRole = {
+  id: string;
+  org_id: string;
+  name: string;
+  created_at: string;
+};
+
+export type PermissionKey =
+  | "view_projects"   | "create_projects"  | "edit_projects"   | "delete_projects"
+  | "view_companies"  | "create_companies" | "edit_companies"  | "delete_companies"
+  | "view_contacts"   | "create_contacts"  | "edit_contacts"   | "delete_contacts"
+  | "view_activity"   | "manage_members"   | "manage_roles";
+
+export const ALL_PERMISSIONS: PermissionKey[] = [
+  "view_projects",   "create_projects",  "edit_projects",   "delete_projects",
+  "view_companies",  "create_companies", "edit_companies",  "delete_companies",
+  "view_contacts",   "create_contacts",  "edit_contacts",   "delete_contacts",
+  "view_activity",   "manage_members",   "manage_roles",
+];
+
+export const PERMISSION_LABELS: Record<PermissionKey, string> = {
+  view_projects:    "View projects",
+  create_projects:  "Create projects",
+  edit_projects:    "Edit projects",
+  delete_projects:  "Delete projects",
+  view_companies:   "View companies",
+  create_companies: "Create companies",
+  edit_companies:   "Edit companies",
+  delete_companies: "Delete companies",
+  view_contacts:    "View contacts",
+  create_contacts:  "Create contacts",
+  edit_contacts:    "Edit contacts",
+  delete_contacts:  "Delete contacts",
+  view_activity:    "View activity log",
+  manage_members:   "Manage members",
+  manage_roles:     "Manage roles",
+};
+
+export type RolePermission = {
+  role_id: string;
+  permission: PermissionKey;
+};
+
+export type Invitation = {
+  id: string;
+  org_id: string;
+  email: string;
+  crm_role: UserRole;
+  org_role_id: string | null;
+  invited_by: string | null;
+  token: string;
+  expires_at: string;
+  accepted_at: string | null;
+  cancelled_at: string | null;
+  created_at: string;
+};
+
+export type OrgWithCount = Organization & { member_count: number };
+
+export type OrgRoleWithPermissions = OrgRole & { permissions: PermissionKey[] };
+
+export type ProfileWithOrg = Profile & {
+  organization: Pick<Organization, "id" | "name"> | null;
+  org_role: Pick<OrgRole, "id" | "name"> | null;
 };
 
 export type ProjectContactLink = {

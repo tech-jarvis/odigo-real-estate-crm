@@ -1,13 +1,19 @@
 "use client";
 
 import { useState } from "react";
-import { Menu, X } from "lucide-react";
+import { Menu, X, ChevronsUpDown } from "lucide-react";
 import { Logo } from "@/components/shared/logo";
 import { SidebarNav } from "./sidebar-nav";
 import { UserMenu } from "./user-menu";
 import { cn } from "@/lib/utils";
 
-export function AppShell({ children }: { children: React.ReactNode }) {
+export function AppShell({
+  children,
+  orgName,
+}: {
+  children: React.ReactNode;
+  orgName?: string | null;
+}) {
   const [mobileOpen, setMobileOpen] = useState(false);
 
   return (
@@ -16,6 +22,16 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <aside className="sticky top-0 hidden h-screen flex-col border-r border-border bg-card/40 p-4 lg:flex">
         <div className="px-2 py-3">
           <Logo />
+          {orgName && (
+            <button
+              className="mt-2 flex w-full items-center gap-1.5 rounded-md border border-border bg-secondary/30 px-2.5 py-1.5 text-left hover:bg-secondary/60 transition-colors"
+              title={orgName}
+              disabled
+            >
+              <span className="flex-1 truncate text-xs font-medium text-foreground/80">{orgName}</span>
+              <ChevronsUpDown className="h-3 w-3 shrink-0 text-muted-foreground" />
+            </button>
+          )}
         </div>
         <div className="mt-4 flex-1">
           <SidebarNav />
@@ -57,6 +73,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         >
           <div className="px-2 py-3">
             <Logo />
+            {orgName && (
+              <p className="mt-1.5 truncate text-xs text-muted-foreground" title={orgName}>
+                {orgName}
+              </p>
+            )}
           </div>
           <div className="mt-4 flex-1">
             <SidebarNav onNavigate={() => setMobileOpen(false)} />
