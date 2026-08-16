@@ -44,34 +44,37 @@ export type OrgRole = {
 };
 
 export type PermissionKey =
-  | "view_projects"   | "create_projects"  | "edit_projects"   | "delete_projects"
-  | "view_companies"  | "create_companies" | "edit_companies"  | "delete_companies"
-  | "view_contacts"   | "create_contacts"  | "edit_contacts"   | "delete_contacts"
-  | "view_activity"   | "manage_members"   | "manage_roles";
+  | "view_projects"    | "create_projects"   | "edit_projects"    | "delete_projects"   | "archive_projects"
+  | "view_companies"   | "create_companies"  | "edit_companies"   | "delete_companies"  | "archive_companies"
+  | "view_contacts"    | "create_contacts"   | "edit_contacts"    | "delete_contacts"   | "archive_contacts"
+  | "view_activity"    | "manage_members"    | "manage_roles";
 
 export const ALL_PERMISSIONS: PermissionKey[] = [
-  "view_projects",   "create_projects",  "edit_projects",   "delete_projects",
-  "view_companies",  "create_companies", "edit_companies",  "delete_companies",
-  "view_contacts",   "create_contacts",  "edit_contacts",   "delete_contacts",
-  "view_activity",   "manage_members",   "manage_roles",
+  "view_projects",    "create_projects",   "edit_projects",    "delete_projects",   "archive_projects",
+  "view_companies",   "create_companies",  "edit_companies",   "delete_companies",  "archive_companies",
+  "view_contacts",    "create_contacts",   "edit_contacts",    "delete_contacts",   "archive_contacts",
+  "view_activity",    "manage_members",    "manage_roles",
 ];
 
 export const PERMISSION_LABELS: Record<PermissionKey, string> = {
-  view_projects:    "View projects",
-  create_projects:  "Create projects",
-  edit_projects:    "Edit projects",
-  delete_projects:  "Delete projects",
-  view_companies:   "View companies",
-  create_companies: "Create companies",
-  edit_companies:   "Edit companies",
-  delete_companies: "Delete companies",
-  view_contacts:    "View contacts",
-  create_contacts:  "Create contacts",
-  edit_contacts:    "Edit contacts",
-  delete_contacts:  "Delete contacts",
-  view_activity:    "View activity log",
-  manage_members:   "Manage members",
-  manage_roles:     "Manage roles",
+  view_projects:     "View projects",
+  create_projects:   "Create projects",
+  edit_projects:     "Edit projects",
+  delete_projects:   "Delete projects",
+  archive_projects:  "Archive / unarchive projects",
+  view_companies:    "View companies",
+  create_companies:  "Create companies",
+  edit_companies:    "Edit companies",
+  delete_companies:  "Delete companies",
+  archive_companies: "Archive / unarchive companies",
+  view_contacts:     "View contacts",
+  create_contacts:   "Create contacts",
+  edit_contacts:     "Edit contacts",
+  delete_contacts:   "Delete contacts",
+  archive_contacts:  "Archive / unarchive contacts",
+  view_activity:     "View activity log",
+  manage_members:    "Manage members",
+  manage_roles:      "Manage roles",
 };
 
 export type RolePermission = {
