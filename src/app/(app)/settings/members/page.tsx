@@ -10,7 +10,7 @@ export const dynamic = "force-dynamic";
 export default async function MembersPage() {
   const profile = await getCurrentProfile();
   if (!profile) redirect("/login");
-  if (profile.role !== "admin" && !profile.is_super_admin) redirect("/");
+  if (profile.role !== "admin") redirect("/");
   if (!profile.org_id) {
     return (
       <div className="py-12 text-center text-sm text-muted-foreground">
