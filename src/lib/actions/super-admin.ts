@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import type { Organization, OrgWithCount, Profile, UserRole } from "@/lib/types";
+import { isValidEmail, normalizeEmail } from "@/lib/utils";
 
 async function requireSuperAdmin() {
   const supabase = await createClient();
@@ -80,6 +81,10 @@ export async function createOrganization(
   adminEmail: string,
   tempPassword: string
 ): Promise<{ org: Organization }> {
+  if (!isValidEmail(adminEmail)) {
+    throw new Error("Invalid admin email address format");
+  }
+  const cleanEmail = normalizeEmail(adminEmail);
   await requireSuperAdmin();
   const admin = createAdminClient();
 
@@ -95,7 +100,7 @@ export async function createOrganization(
 
   // Create auth user with confirmed email and temp password
   const { data: authData, error: authErr } = await admin.auth.admin.createUser({
-    email: adminEmail,
+    email: cleanEmail,
     password: tempPassword,
     email_confirm: true,
   });
@@ -112,7 +117,7 @@ export async function createOrganization(
   const { error: profileErr } = await admin
     .from("profiles")
     .upsert(
-      { id: userId, email: adminEmail, org_id: org.id, role: "admin", must_change_password: true },
+      { id: userId, email: cleanEmail, org_id: org.id, role: "admin", must_change_password: true },
       { onConflict: "id" }
     );
 
@@ -128,11 +133,15 @@ export async function createOrgMember(
   tempPassword: string,
   crmRole: UserRole
 ): Promise<void> {
+  if (!isValidEmail(email)) {
+    throw new Error("Invalid email address format");
+  }
+  const cleanEmail = normalizeEmail(email);
   await requireSuperAdmin();
   const admin = createAdminClient();
 
   const { data: authData, error: authErr } = await admin.auth.admin.createUser({
-    email,
+    email: cleanEmail,
     password: tempPassword,
     email_confirm: true,
   });
@@ -142,7 +151,7 @@ export async function createOrgMember(
   const { error: profileErr } = await admin
     .from("profiles")
     .upsert(
-      { id: authData.user.id, email, org_id: orgId, role: crmRole, must_change_password: true },
+      { id: authData.user.id, email: cleanEmail, org_id: orgId, role: crmRole, must_change_password: true },
       { onConflict: "id" }
     );
 

@@ -73,6 +73,29 @@ export function RolesView({
     });
   }
 
+  const isAllSelected = ALL_PERMISSIONS.every((p) => permissions.has(p));
+
+  function handleToggleSelectAll() {
+    if (isAllSelected) {
+      setPermissions(new Set());
+    } else {
+      setPermissions(new Set(ALL_PERMISSIONS));
+    }
+  }
+
+  function toggleGroup(groupPerms: PermissionKey[]) {
+    const isGroupAllSelected = groupPerms.every((p) => permissions.has(p));
+    setPermissions((prev) => {
+      const next = new Set(prev);
+      if (isGroupAllSelected) {
+        groupPerms.forEach((p) => next.delete(p));
+      } else {
+        groupPerms.forEach((p) => next.add(p));
+      }
+      return next;
+    });
+  }
+
   async function handleSavePermissions() {
     if (!selected) return;
     setSaving(true);
@@ -183,41 +206,69 @@ export function RolesView({
           ) : (
             <div className="rounded-lg border border-border">
               <div className="flex items-center justify-between border-b border-border px-4 py-3">
-                <p className="font-medium">{selected.name}</p>
-                <Button size="sm" onClick={handleSavePermissions} disabled={saving}>
-                  {saving ? "Saving…" : "Save permissions"}
-                </Button>
+                <div className="flex items-center gap-3">
+                  <p className="font-medium">{selected.name}</p>
+                  <span className="rounded-full bg-secondary px-2.5 py-0.5 text-xs text-muted-foreground">
+                    {permissions.size} of {ALL_PERMISSIONS.length} permissions
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={handleToggleSelectAll}
+                  >
+                    {isAllSelected ? "Deselect all" : "Select all"}
+                  </Button>
+                  <Button size="sm" onClick={handleSavePermissions} disabled={saving}>
+                    {saving ? "Saving…" : "Save permissions"}
+                  </Button>
+                </div>
               </div>
 
               <div className="divide-y divide-border">
-                {PERMISSION_GROUPS.map((group) => (
-                  <div key={group.label} className="px-4 py-4">
-                    <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                      {group.label}
-                    </p>
-                    <div className="grid grid-cols-2 gap-2">
-                      {group.perms.map((p) => {
-                        const checked = permissions.has(p);
-                        return (
-                          <button
-                            key={p}
-                            onClick={() => togglePermission(p)}
-                            className="flex items-center gap-2.5 rounded-md px-3 py-2 text-sm text-left transition-colors hover:bg-secondary/50"
-                          >
-                            {checked ? (
-                              <CheckSquare className="h-4 w-4 shrink-0 text-gold" />
-                            ) : (
-                              <Square className="h-4 w-4 shrink-0 text-muted-foreground" />
-                            )}
-                            <span className={checked ? "text-foreground" : "text-muted-foreground"}>
-                              {PERMISSION_LABELS[p]}
-                            </span>
-                          </button>
-                        );
-                      })}
+                {PERMISSION_GROUPS.map((group) => {
+                  const isGroupAllSelected = group.perms.every((p) => permissions.has(p));
+                  return (
+                    <div key={group.label} className="px-4 py-4">
+                      <div className="mb-3 flex items-center justify-between">
+                        <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                          {group.label}
+                        </p>
+                        <button
+                          type="button"
+                          onClick={() => toggleGroup(group.perms)}
+                          className="text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
+                        >
+                          {isGroupAllSelected ? "Deselect category" : "Select category"}
+                        </button>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2">
+                        {group.perms.map((p) => {
+                          const checked = permissions.has(p);
+                          return (
+                            <button
+                              key={p}
+                              type="button"
+                              onClick={() => togglePermission(p)}
+                              className="flex items-center gap-2.5 rounded-md px-3 py-2 text-sm text-left transition-colors hover:bg-secondary/50"
+                            >
+                              {checked ? (
+                                <CheckSquare className="h-4 w-4 shrink-0 text-gold" />
+                              ) : (
+                                <Square className="h-4 w-4 shrink-0 text-muted-foreground" />
+                              )}
+                              <span className={checked ? "text-foreground" : "text-muted-foreground"}>
+                                {PERMISSION_LABELS[p]}
+                              </span>
+                            </button>
+                          );
+                        })}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           )}

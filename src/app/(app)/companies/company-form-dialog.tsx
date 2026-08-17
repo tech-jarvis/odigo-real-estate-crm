@@ -28,6 +28,7 @@ import {
 } from "@/components/ui/select";
 import { SEGMENT_META } from "@/lib/types";
 import type { Company, CompanySegment } from "@/lib/types";
+import { isValidEmail } from "@/lib/utils";
 import { createCompany, updateCompany } from "./actions";
 
 const SEGMENTS: CompanySegment[] = ["residential", "commercial", "industrial"];
@@ -48,6 +49,7 @@ export function CompanyFormDialog({
   const [nameError, setNameError] = useState<string | null>(null);
   const [addressError, setAddressError] = useState<string | null>(null);
   const [contactError, setContactError] = useState<string | null>(null);
+  const [emailError, setEmailError] = useState<string | null>(null);
   const [notesError, setNotesError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
@@ -79,6 +81,13 @@ export function CompanyFormDialog({
       setContactError(msg); toast.error("Invalid primary contact", { description: msg }); return;
     }
     setContactError(null);
+
+    const email = (formData.get("email") as string)?.trim();
+    if (email && !isValidEmail(email)) {
+      const msg = "Please enter a valid email address.";
+      setEmailError(msg); toast.error("Invalid email", { description: msg }); return;
+    }
+    setEmailError(null);
 
     const notes = (formData.get("notes") as string) ?? "";
     if (/<[^>]*>/.test(notes)) {
@@ -113,7 +122,7 @@ export function CompanyFormDialog({
   }
 
   return (
-    <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (!o) { setNameError(null); setAddressError(null); setContactError(null); setNotesError(null); } }}>
+    <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (!o) { setNameError(null); setAddressError(null); setContactError(null); setNotesError(null); setEmailError(null); } }}>
       <DialogTrigger asChild>
         {mode === "create" ? (
           <Button>
@@ -214,7 +223,11 @@ export function CompanyFormDialog({
               name="email"
               type="email"
               defaultValue={company?.email ?? ""}
+              aria-invalid={!!emailError}
+              className={emailError ? "border-destructive focus-visible:ring-destructive" : ""}
+              onChange={() => emailError && setEmailError(null)}
             />
+            {emailError && <p className="text-xs text-destructive">{emailError}</p>}
           </div>
 
           <div className="space-y-1.5">

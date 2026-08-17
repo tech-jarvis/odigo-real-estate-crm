@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { UserX, UserPlus, Eye, EyeOff, RefreshCw } from "lucide-react";
 import type { Organization, Profile, UserRole } from "@/lib/types";
 import { createOrgMember, removeOrgMember } from "@/lib/actions/super-admin";
+import { isValidEmail, normalizeEmail } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -51,10 +52,16 @@ export function OrgDetailView({
   async function handleAddMember(e: React.FormEvent) {
     e.preventDefault();
     if (!email.trim() || !tempPassword) return;
+    if (!isValidEmail(email)) {
+      toast.error("Invalid email address", {
+        description: "Please enter a valid email address.",
+      });
+      return;
+    }
     setAdding(true);
     try {
-      await createOrgMember(org.id, email.trim(), tempPassword, role);
-      toast.success(`Account created for ${email}. Share the credentials with them.`);
+      await createOrgMember(org.id, normalizeEmail(email), tempPassword, role);
+      toast.success(`Account created for ${email.trim()}. Share the credentials with them.`);
       setEmail("");
       setRole("viewer");
       setTempPassword(generatePassword());

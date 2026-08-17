@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Eye, EyeOff, RefreshCw } from "lucide-react";
 import { createOrganization } from "@/lib/actions/super-admin";
+import { isValidEmail, normalizeEmail } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -25,10 +26,16 @@ export function CreateOrgForm() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!name.trim() || !adminEmail.trim() || !tempPassword) return;
+    if (!isValidEmail(adminEmail)) {
+      toast.error("Invalid email address", {
+        description: "Please enter a valid admin email address.",
+      });
+      return;
+    }
 
     setLoading(true);
     try {
-      const { org } = await createOrganization(name.trim(), adminEmail.trim(), tempPassword);
+      const { org } = await createOrganization(name.trim(), normalizeEmail(adminEmail), tempPassword);
       toast.success(`"${org.name}" created. Share the credentials with the admin.`);
       router.push("/super-admin/organizations");
     } catch (err) {

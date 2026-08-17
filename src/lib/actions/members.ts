@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import type { Invitation, Profile, UserRole } from "@/lib/types";
+import { isValidEmail, normalizeEmail } from "@/lib/utils";
 
 async function requireOrgAdmin(): Promise<{
   supabase: Awaited<ReturnType<typeof createClient>>;
@@ -74,13 +75,17 @@ export async function createMemberWithPassword(
   orgRoleId: string,
   tempPassword: string
 ): Promise<void> {
+  if (!isValidEmail(email)) {
+    throw new Error("Invalid email address format");
+  }
+  const cleanEmail = normalizeEmail(email);
   const { orgId } = await requireOrgAdmin();
   const admin = createAdminClient();
 
   const crmRole = await crmRoleFromOrgRole(admin, orgRoleId);
 
   const { data: authData, error: authErr } = await admin.auth.admin.createUser({
-    email,
+    email: cleanEmail,
     password: tempPassword,
     email_confirm: true,
   });
@@ -90,7 +95,7 @@ export async function createMemberWithPassword(
   const { error: profileErr } = await admin
     .from("profiles")
     .upsert(
-      { id: authData.user.id, email, org_id: orgId, role: crmRole, org_role_id: orgRoleId, must_change_password: true },
+      { id: authData.user.id, email: cleanEmail, org_id: orgId, role: crmRole, org_role_id: orgRoleId, must_change_password: true },
       { onConflict: "id" }
     );
 
@@ -104,6 +109,10 @@ export async function inviteMember(
   email: string,
   orgRoleId: string
 ): Promise<void> {
+  if (!isValidEmail(email)) {
+    throw new Error("Invalid email address format");
+  }
+  const cleanEmail = normalizeEmail(email);
   const { supabase } = await requireOrgAdmin();
   const admin = createAdminClient();
 
@@ -114,7 +123,7 @@ export async function inviteMember(
     .from("invitations")
     .select("id, token")
     .eq("org_id", orgId)
-    .eq("email", email)
+    .eq("email", cleanEmail)
     .is("accepted_at", null)
     .is("cancelled_at", null)
     .maybeSingle();
@@ -137,7 +146,7 @@ export async function inviteMember(
       .from("invitations")
       .insert({
         org_id: orgId,
-        email,
+        email: cleanEmail,
         crm_role: crmRole,
         org_role_id: orgRoleId,
         invited_by: user?.id ?? null,
@@ -153,7 +162,7 @@ export async function inviteMember(
     (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3001");
   const redirectTo = `${baseUrl}/accept-invite?token=${token}`;
 
-  const { error: authErr } = await admin.auth.admin.inviteUserByEmail(email, {
+  const { error: authErr } = await admin.auth.admin.inviteUserByEmail(cleanEmail, {
     redirectTo,
     data: { invitation_token: token },
   });

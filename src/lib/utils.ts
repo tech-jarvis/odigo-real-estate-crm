@@ -67,3 +67,18 @@ export function initials(name: string | null | undefined): string {
     .join("")
     .toUpperCase();
 }
+
+/** RFC 5322 standard email regex */
+export const EMAIL_REGEX = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+
+/** Validates whether an email string matches standard format */
+export function isValidEmail(email: string | null | undefined): boolean {
+  if (!email) return false;
+  return EMAIL_REGEX.test(email.trim());
+}
+
+/** Canonical email normalizer (trims and converts to lowercase) */
+export function normalizeEmail(email: string | null | undefined): string {
+  return (email ?? "").trim().toLowerCase();
+}
+

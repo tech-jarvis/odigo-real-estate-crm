@@ -3,12 +3,20 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import type { CompanySegment } from "@/lib/types";
+import { isValidEmail, normalizeEmail } from "@/lib/utils";
 
 type Result = { error: string | null };
 
 function n(v: FormDataEntryValue | null): string | null {
   const s = (v as string | null)?.trim();
   return s ? s : null;
+}
+
+function parseEmail(v: FormDataEntryValue | null): { error?: string; email: string | null } {
+  const raw = n(v);
+  if (!raw) return { email: null };
+  if (!isValidEmail(raw)) return { error: "Please enter a valid email address." };
+  return { email: normalizeEmail(raw) };
 }
 
 function hasHtml(v: FormDataEntryValue | null): boolean {
@@ -31,6 +39,9 @@ export async function createCompany(formData: FormData): Promise<Result> {
   const name = n(formData.get("name"));
   if (!name) return { error: "Company name is required." };
 
+  const parsedEmail = parseEmail(formData.get("email"));
+  if (parsedEmail.error) return { error: parsedEmail.error };
+
   const { error } = await supabase.from("companies").insert({
     name,
     slug: "",
@@ -38,7 +49,7 @@ export async function createCompany(formData: FormData): Promise<Result> {
     address: n(formData.get("address")),
     primary_contact: n(formData.get("primary_contact")),
     phone: n(formData.get("phone")),
-    email: n(formData.get("email")),
+    email: parsedEmail.email,
     notes: n(formData.get("notes")),
   });
   if (error) return { error: dbErr(error.code, error.message) };
@@ -56,6 +67,10 @@ export async function updateCompany(
   if (hasHtml(formData.get("address"))) return { error: "Address cannot contain HTML." };
   if (hasHtml(formData.get("primary_contact"))) return { error: "Primary contact cannot contain HTML." };
   if (hasHtml(formData.get("notes"))) return { error: "Notes cannot contain HTML." };
+
+  const parsedEmail = parseEmail(formData.get("email"));
+  if (parsedEmail.error) return { error: parsedEmail.error };
+
   const { error } = await supabase
     .from("companies")
     .update({
@@ -64,7 +79,7 @@ export async function updateCompany(
       address: n(formData.get("address")),
       primary_contact: n(formData.get("primary_contact")),
       phone: n(formData.get("phone")),
-      email: n(formData.get("email")),
+      email: parsedEmail.email,
       notes: n(formData.get("notes")),
     })
     .eq("id", id);
@@ -95,12 +110,15 @@ export async function createContact(
   const name = n(formData.get("name"));
   if (!name) return { error: "Contact name is required." };
 
+  const parsedEmail = parseEmail(formData.get("email"));
+  if (parsedEmail.error) return { error: parsedEmail.error };
+
   const { error } = await supabase.from("contacts").insert({
     company_id: companyId,
     name,
     role: n(formData.get("role")),
     phone: n(formData.get("phone")),
-    email: n(formData.get("email")),
+    email: parsedEmail.email,
   });
   if (error) return { error: dbErr(error.code, error.message) };
 
@@ -116,13 +134,17 @@ export async function updateContact(
   const supabase = await createClient();
   if (hasHtml(formData.get("name"))) return { error: "Contact name cannot contain HTML." };
   if (hasHtml(formData.get("role"))) return { error: "Role cannot contain HTML." };
+
+  const parsedEmail = parseEmail(formData.get("email"));
+  if (parsedEmail.error) return { error: parsedEmail.error };
+
   const { error } = await supabase
     .from("contacts")
     .update({
       name: n(formData.get("name")) ?? undefined,
       role: n(formData.get("role")),
       phone: n(formData.get("phone")),
-      email: n(formData.get("email")),
+      email: parsedEmail.email,
     })
     .eq("id", id);
   if (error) return { error: dbErr(error.code, error.message) };

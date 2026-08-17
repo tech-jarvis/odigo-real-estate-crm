@@ -18,6 +18,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PhoneInputField } from "@/components/ui/phone-input";
 import type { Contact } from "@/lib/types";
+import { isValidEmail } from "@/lib/utils";
 import { createContact, updateContact } from "../actions";
 
 export function ContactFormDialog({
@@ -32,6 +33,7 @@ export function ContactFormDialog({
   const [open, setOpen] = useState(false);
   const [nameError, setNameError] = useState<string | null>(null);
   const [roleError, setRoleError] = useState<string | null>(null);
+  const [emailError, setEmailError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
   function handle(formData: FormData) {
@@ -49,6 +51,13 @@ export function ContactFormDialog({
     }
     setRoleError(null);
 
+    const email = (formData.get("email") as string)?.trim();
+    if (email && !isValidEmail(email)) {
+      const msg = "Please enter a valid email address.";
+      setEmailError(msg); toast.error("Invalid email", { description: msg }); return;
+    }
+    setEmailError(null);
+
     startTransition(async () => {
       const res =
         mode === "create"
@@ -64,7 +73,7 @@ export function ContactFormDialog({
   }
 
   return (
-    <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (!o) { setNameError(null); setRoleError(null); } }}>
+    <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (!o) { setNameError(null); setRoleError(null); setEmailError(null); } }}>
       <DialogTrigger asChild>
         {mode === "create" ? (
           <Button variant="secondary" size="sm">
@@ -120,7 +129,11 @@ export function ContactFormDialog({
               name="email"
               type="email"
               defaultValue={contact?.email ?? ""}
+              aria-invalid={!!emailError}
+              className={emailError ? "border-destructive focus-visible:ring-destructive" : ""}
+              onChange={() => emailError && setEmailError(null)}
             />
+            {emailError && <p className="text-xs text-destructive">{emailError}</p>}
           </div>
           <DialogFooter>
             <DialogClose asChild>

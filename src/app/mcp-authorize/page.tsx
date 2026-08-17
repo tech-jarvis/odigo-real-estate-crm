@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Logo } from "@/components/shared/logo";
+import { isValidEmail, normalizeEmail } from "@/lib/utils";
 
 type Step = "loading" | "login" | "authorize" | "redirecting" | "error";
 
@@ -55,11 +56,16 @@ function McpAuthorizeContent() {
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
+    if (!isValidEmail(email)) {
+      setErrorMsg("Please enter a valid email address.");
+      return;
+    }
+
     setBusy(true);
     setErrorMsg(null);
     const supabase = createClient();
     const { data, error } = await supabase.auth.signInWithPassword({
-      email,
+      email: normalizeEmail(email),
       password,
     });
     if (error || !data.session) {
