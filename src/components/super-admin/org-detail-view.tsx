@@ -49,7 +49,7 @@ export function OrgDetailView({
       {members.length === 0 ? (
         <div className="rounded-lg border border-dashed border-border py-12 text-center">
           <p className="text-sm text-muted-foreground">
-            No members yet. Use the form above to create an account.
+            No members yet. The Admin account will appear here once they log in for the first time.
           </p>
         </div>
       ) : (
@@ -105,6 +105,7 @@ export function OrgDetailView({
                       onClick={() => setRemovingId(m.id)}
                       className="rounded p-1.5 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
                       title="Remove member"
+                      aria-label="Remove member from organization"
                     >
                       <UserX className="h-4 w-4" />
                     </button>
