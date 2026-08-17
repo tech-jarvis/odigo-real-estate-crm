@@ -9,7 +9,8 @@
     "lint": "next lint",
     "test": "playwright test",
     "test:ui": "playwright test --ui",
-    "test:report": "playwright show-report tests/report"
+    "test:report": "playwright show-report tests/report",
+    "prepare": "husky"
   },
   "dependencies": {
     "@hello-pangea/dnd": "^18.0.1",
@@ -44,6 +45,7 @@
     "autoprefixer": "^10.4.20",
     "eslint": "^9",
     "eslint-config-next": "15.3.8",
+    "husky": "^9.1.7",
     "postcss": "^8",
     "tailwindcss": "^3.4.17",
     "typescript": "^5"

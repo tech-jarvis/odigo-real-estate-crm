@@ -1,0 +1,3 @@
+git config user.name "tech-jarvis"
+git config user.email "mail.asharali@gmail.com"
+echo "Git user set to: tech-jarvis <mail.asharali@gmail.com>"
