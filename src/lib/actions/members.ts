@@ -16,15 +16,15 @@ async function requireOrgAdmin(): Promise<{
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("role, org_id, is_super_admin")
+    .select("role, org_id")
     .eq("id", user.id)
     .single();
 
   if (!profile) throw new Error("Profile not found");
-  if (profile.role !== "admin" && !profile.is_super_admin) {
+  if (profile.role !== "admin") {
     throw new Error("Forbidden — admin only");
   }
-  if (!profile.org_id && !profile.is_super_admin) {
+  if (!profile.org_id) {
     throw new Error("No organization assigned");
   }
 
