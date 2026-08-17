@@ -23,6 +23,9 @@ async function requireOrgAdmin(): Promise<{
   if (profile.role !== "admin") {
     throw new Error("Forbidden — admin only");
   }
+  if (!profile.org_id) {
+    throw new Error("No organization assigned");
+  }
 
   return { supabase, orgId: profile.org_id as string };
 }
