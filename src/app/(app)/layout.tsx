@@ -13,6 +13,9 @@ export default async function AppLayout({
 
   if (!profile) redirect("/login");
 
+  // Super admins have their own layout — don't load the regular app shell.
+  if (profile.is_super_admin) redirect("/super-admin/organizations");
+
   // First-login password change — outside (app) so no redirect loop.
   if (profile.must_change_password) redirect("/change-password");
 
