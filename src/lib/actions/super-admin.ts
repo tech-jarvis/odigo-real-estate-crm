@@ -122,7 +122,11 @@ export async function createOrganization(
     throw new Error(authErr.message);
   }
 
-  const userId = authData.user.id;
+  const userId = authData.user?.id;
+  if (!userId) {
+    await admin.from("organizations").delete().eq("id", org.id);
+    throw new Error("Auth user creation returned no user");
+  }
 
   // 3. Seed default Admin org role
   const { data: adminRole, error: adminRoleErr } = await admin
@@ -151,14 +155,24 @@ export async function createOrganization(
   }
 
   // 5. Seed Admin role permissions (full access)
-  await admin.from("role_permissions").insert(
+  const { error: adminPermsErr } = await admin.from("role_permissions").insert(
     ADMIN_PERMISSIONS.map((permission) => ({ role_id: adminRole.id, permission }))
   );
+  if (adminPermsErr) {
+    await admin.from("organizations").delete().eq("id", org.id);
+    await admin.auth.admin.deleteUser(userId);
+    throw new Error(adminPermsErr.message);
+  }
 
   // 6. Seed Viewer role permissions (read-only)
-  await admin.from("role_permissions").insert(
+  const { error: viewerPermsErr } = await admin.from("role_permissions").insert(
     VIEWER_PERMISSIONS.map((permission) => ({ role_id: viewerRole.id, permission }))
   );
+  if (viewerPermsErr) {
+    await admin.from("organizations").delete().eq("id", org.id);
+    await admin.auth.admin.deleteUser(userId);
+    throw new Error(viewerPermsErr.message);
+  }
 
   // 7. Create admin profile linked to org and Admin org role
   const { error: profileErr } = await admin
@@ -175,7 +189,11 @@ export async function createOrganization(
       { onConflict: "id" }
     );
 
-  if (profileErr) throw new Error(profileErr.message);
+  if (profileErr) {
+    await admin.from("organizations").delete().eq("id", org.id);
+    await admin.auth.admin.deleteUser(userId);
+    throw new Error(profileErr.message);
+  }
 
   revalidatePath("/super-admin/organizations");
   return { org };
