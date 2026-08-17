@@ -12,11 +12,25 @@ import { isValidEmail, normalizeEmail } from "@/lib/utils";
 
 type Step = "loading" | "login" | "authorize" | "redirecting" | "error";
 
+function getPlatformName(redirectUri: string): string {
+  if (!redirectUri) return "Claude";
+  try {
+    const url = new URL(redirectUri);
+    if (url.hostname.includes("chatgpt.com")) return "ChatGPT";
+    if (url.hostname.includes("claude.ai")) return "Claude";
+    if (url.hostname === "localhost" || url.hostname === "127.0.0.1") return "Claude Desktop";
+  } catch {
+    // Invalid URL, fall back to default
+  }
+  return "Claude";
+}
+
 function McpAuthorizeContent() {
   const params = useSearchParams();
   const redirectUri = params.get("redirect_uri") ?? "";
   const codeChallenge = params.get("code_challenge") ?? "";
   const state = params.get("state") ?? "";
+  const platform = getPlatformName(redirectUri);
 
   const [step, setStep] = useState<Step>("loading");
   const [email, setEmail] = useState("");
@@ -130,10 +144,10 @@ function McpAuthorizeContent() {
           {step === "authorize" || step === "redirecting" ? (
             <>
               <h1 className="text-2xl font-semibold tracking-tight">
-                Connect Claude AI
+                Connect {platform}
               </h1>
               <p className="mt-1.5 text-sm text-muted-foreground">
-                Authorize Claude Desktop to access the CRM pipeline.
+                Authorize {platform} to access the CRM pipeline.
               </p>
             </>
           ) : (
@@ -142,7 +156,7 @@ function McpAuthorizeContent() {
                 Sign in to continue
               </h1>
               <p className="mt-1.5 text-sm text-muted-foreground">
-                Sign in to authorize Claude to access the CRM pipeline.
+                Sign in to authorize {platform} to access the CRM pipeline.
               </p>
             </>
           )}
@@ -225,7 +239,7 @@ function McpAuthorizeContent() {
                   ? "Redirecting…"
                   : busy
                     ? "Authorizing…"
-                    : "Authorize Claude Desktop"}
+                    : `Authorize ${platform}`}
               </Button>
             </div>
           )}
