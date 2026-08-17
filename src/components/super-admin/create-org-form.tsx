@@ -3,11 +3,12 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Eye, EyeOff, RefreshCw } from "lucide-react";
+import { RefreshCw } from "lucide-react";
 import { createOrganization } from "@/lib/actions/super-admin";
 import { isValidEmail, normalizeEmail } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { Label } from "@/components/ui/label";
 
 function generatePassword(): string {
@@ -20,7 +21,6 @@ export function CreateOrgForm() {
   const [name, setName] = useState("");
   const [adminEmail, setAdminEmail] = useState("");
   const [tempPassword, setTempPassword] = useState(generatePassword);
-  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
@@ -75,23 +75,15 @@ export function CreateOrgForm() {
       <div className="space-y-2">
         <Label htmlFor="password">Temporary password</Label>
         <div className="flex gap-2">
-          <div className="relative flex-1">
-            <Input
+          <div className="flex-1">
+            <PasswordInput
               id="password"
-              type={showPassword ? "text" : "password"}
               value={tempPassword}
               onChange={(e) => setTempPassword(e.target.value)}
               required
               disabled={loading}
-              className="pr-10 font-mono text-sm"
+              className="font-mono text-sm"
             />
-            <button
-              type="button"
-              onClick={() => setShowPassword((v) => !v)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-            >
-              {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-            </button>
           </div>
           <Button
             type="button"
