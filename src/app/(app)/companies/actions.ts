@@ -15,7 +15,7 @@ function n(v: FormDataEntryValue | null): string | null {
 function parseEmail(v: FormDataEntryValue | null): { error?: string; email: string | null } {
   const raw = n(v);
   if (!raw) return { email: null };
-  if (!isValidEmail(raw)) return { error: "Please enter a valid email address." };
+  if (!isValidEmail(raw)) return { error: "Please enter a valid email address.", email: null };
   return { email: normalizeEmail(raw) };
 }
 
