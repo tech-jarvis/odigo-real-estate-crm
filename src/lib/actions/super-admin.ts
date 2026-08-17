@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import type { Organization, OrgWithCount, Profile, UserRole } from "@/lib/types";
+import type { Organization, OrgWithCount, Profile } from "@/lib/types";
 import { isValidEmail, normalizeEmail } from "@/lib/utils";
 
 async function requireSuperAdmin() {
@@ -76,6 +76,17 @@ function slugify(name: string): string {
     .replace(/^-|-$/g, "");
 }
 
+const ADMIN_PERMISSIONS = [
+  "view_projects", "create_projects", "edit_projects", "delete_projects", "archive_projects",
+  "view_companies", "create_companies", "edit_companies", "delete_companies", "archive_companies",
+  "view_contacts", "create_contacts", "edit_contacts", "delete_contacts", "archive_contacts",
+  "view_activity", "manage_members", "manage_roles",
+] as const;
+
+const VIEWER_PERMISSIONS = [
+  "view_projects", "view_companies", "view_contacts", "view_activity",
+] as const;
+
 export async function createOrganization(
   name: string,
   adminEmail: string,
@@ -90,6 +101,7 @@ export async function createOrganization(
 
   const slug = slugify(name);
 
+  // 1. Create the organization
   const { data: org, error: orgErr } = await admin
     .from("organizations")
     .insert({ name, slug })
@@ -98,7 +110,7 @@ export async function createOrganization(
 
   if (orgErr) throw new Error(orgErr.message);
 
-  // Create auth user with confirmed email and temp password
+  // 2. Create auth user
   const { data: authData, error: authErr } = await admin.auth.admin.createUser({
     email: cleanEmail,
     password: tempPassword,
@@ -106,18 +118,60 @@ export async function createOrganization(
   });
 
   if (authErr) {
-    // Roll back org creation
     await admin.from("organizations").delete().eq("id", org.id);
     throw new Error(authErr.message);
   }
 
   const userId = authData.user.id;
 
-  // Upsert handles both: trigger already ran (update) and hasn't run yet (insert)
+  // 3. Seed default Admin org role
+  const { data: adminRole, error: adminRoleErr } = await admin
+    .from("org_roles")
+    .insert({ org_id: org.id, name: "Admin" })
+    .select("id")
+    .single();
+
+  if (adminRoleErr) {
+    await admin.from("organizations").delete().eq("id", org.id);
+    await admin.auth.admin.deleteUser(userId);
+    throw new Error(adminRoleErr.message);
+  }
+
+  // 4. Seed default Viewer org role
+  const { data: viewerRole, error: viewerRoleErr } = await admin
+    .from("org_roles")
+    .insert({ org_id: org.id, name: "Viewer" })
+    .select("id")
+    .single();
+
+  if (viewerRoleErr) {
+    await admin.from("organizations").delete().eq("id", org.id);
+    await admin.auth.admin.deleteUser(userId);
+    throw new Error(viewerRoleErr.message);
+  }
+
+  // 5. Seed Admin role permissions (full access)
+  await admin.from("role_permissions").insert(
+    ADMIN_PERMISSIONS.map((permission) => ({ role_id: adminRole.id, permission }))
+  );
+
+  // 6. Seed Viewer role permissions (read-only)
+  await admin.from("role_permissions").insert(
+    VIEWER_PERMISSIONS.map((permission) => ({ role_id: viewerRole.id, permission }))
+  );
+
+  // 7. Create admin profile linked to org and Admin org role
   const { error: profileErr } = await admin
     .from("profiles")
     .upsert(
-      { id: userId, email: cleanEmail, org_id: org.id, role: "admin", must_change_password: true },
+      {
+        id: userId,
+        email: cleanEmail,
+        org_id: org.id,
+        role: "admin",
+        org_role_id: adminRole.id,
+        must_change_password: true,
+      },
       { onConflict: "id" }
     );
 
@@ -127,38 +181,6 @@ export async function createOrganization(
   return { org };
 }
 
-export async function createOrgMember(
-  orgId: string,
-  email: string,
-  tempPassword: string,
-  crmRole: UserRole
-): Promise<void> {
-  if (!isValidEmail(email)) {
-    throw new Error("Invalid email address format");
-  }
-  const cleanEmail = normalizeEmail(email);
-  await requireSuperAdmin();
-  const admin = createAdminClient();
-
-  const { data: authData, error: authErr } = await admin.auth.admin.createUser({
-    email: cleanEmail,
-    password: tempPassword,
-    email_confirm: true,
-  });
-
-  if (authErr) throw new Error(authErr.message);
-
-  const { error: profileErr } = await admin
-    .from("profiles")
-    .upsert(
-      { id: authData.user.id, email: cleanEmail, org_id: orgId, role: crmRole, must_change_password: true },
-      { onConflict: "id" }
-    );
-
-  if (profileErr) throw new Error(profileErr.message);
-
-  revalidatePath(`/super-admin/organizations/${orgId}`);
-}
 
 export async function removeOrgMember(userId: string, orgId: string): Promise<void> {
   await requireSuperAdmin();
