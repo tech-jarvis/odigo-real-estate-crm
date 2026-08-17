@@ -3,12 +3,13 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { UserX, UserPlus, Eye, EyeOff, RefreshCw } from "lucide-react";
+import { UserX, UserPlus, RefreshCw } from "lucide-react";
 import type { Organization, Profile, UserRole } from "@/lib/types";
 import { createOrgMember, removeOrgMember } from "@/lib/actions/super-admin";
 import { isValidEmail, normalizeEmail } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import {
   Select,
   SelectContent,
@@ -46,7 +47,6 @@ export function OrgDetailView({
   const [email, setEmail] = useState("");
   const [role, setRole] = useState<UserRole>("viewer");
   const [tempPassword, setTempPassword] = useState(generatePassword);
-  const [showPassword, setShowPassword] = useState(false);
   const [adding, setAdding] = useState(false);
 
   async function handleAddMember(e: React.FormEvent) {
@@ -125,23 +125,15 @@ export function OrgDetailView({
         </div>
         <div className="flex items-end gap-2">
           <div className="flex-1">
-            <label className="mb-1.5 block text-xs text-muted-foreground">Temporary password</label>
-            <div className="relative">
-              <Input
-                type={showPassword ? "text" : "password"}
-                value={tempPassword}
-                onChange={(e) => setTempPassword(e.target.value)}
-                required
-                className="h-9 pr-9 font-mono text-sm"
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword((v) => !v)}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-              >
-                {showPassword ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
-              </button>
-            </div>
+            <label className="mb-1.5 block text-xs text-muted-foreground">
+              Temporary password
+            </label>
+            <PasswordInput
+              value={tempPassword}
+              onChange={(e) => setTempPassword(e.target.value)}
+              required
+              className="h-9 font-mono text-sm"
+            />
           </div>
           <Button
             type="button"

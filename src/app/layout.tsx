@@ -28,6 +28,13 @@ export const metadata: Metadata = {
   applicationName: "Odigo CRM",
   // Internal tool with client data — never index it.
   robots: { index: false, follow: false, nocache: true },
+  icons: {
+    icon: [
+      { url: "/icon.svg", type: "image/svg+xml" },
+      { url: "/favicon.ico", sizes: "any" },
+    ],
+    apple: "/apple-icon.png",
+  },
   openGraph: {
     siteName: "Odigo CRM",
     type: "website",
