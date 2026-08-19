@@ -63,8 +63,8 @@ export default async function CompanyDetailPage({
 }) {
   const { slug } = await params;
   const supabase = await createClient();
-  const profile = await getCurrentProfile();
-  const isAdmin = profile?.role === "admin";
+  const current = await getCurrentProfile();
+  const isAdmin = current?.currentRole === "admin";
 
   const company = await getCompanyBySlug(slug);
   if (!company) notFound();

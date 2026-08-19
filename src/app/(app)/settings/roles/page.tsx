@@ -6,10 +6,10 @@ import { RolesView } from "@/components/settings/roles-view";
 export const dynamic = "force-dynamic";
 
 export default async function RolesPage() {
-  const profile = await getCurrentProfile();
-  if (!profile) redirect("/login");
-  if (profile.role !== "admin") redirect("/");
-  if (!profile.org_id) {
+  const current = await getCurrentProfile();
+  if (!current) redirect("/login");
+  if (current.currentRole !== "admin") redirect("/");
+  if (!current.currentOrgId) {
     return (
       <div className="py-12 text-center text-sm text-muted-foreground">
         Your account is not assigned to an organization.
@@ -17,7 +17,7 @@ export default async function RolesPage() {
     );
   }
 
-  const roles = await listRoles(profile.org_id);
+  const roles = await listRoles(current.currentOrgId);
 
   return (
     <div>
@@ -28,7 +28,7 @@ export default async function RolesPage() {
         </p>
       </div>
 
-      <RolesView orgId={profile.org_id} roles={roles} />
+      <RolesView orgId={current.currentOrgId} roles={roles} />
     </div>
   );
 }

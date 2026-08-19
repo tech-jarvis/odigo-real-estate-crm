@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Trash2, Eye, EyeOff, RefreshCw, UserPlus, AlertCircle } from "lucide-react";
-import type { OrgRoleWithPermissions, Profile } from "@/lib/types";
+import type { MemberWithRole, OrgRoleWithPermissions } from "@/lib/types";
 import { createMemberWithPassword, removeMember } from "@/lib/actions/members";
 import { isValidEmail, normalizeEmail } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -28,7 +28,7 @@ import {
 
 type Props = {
   orgId: string;
-  members: Profile[];
+  members: MemberWithRole[];
   roles: OrgRoleWithPermissions[];
 };
 

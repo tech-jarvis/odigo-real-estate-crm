@@ -1,6 +1,5 @@
 import { redirect } from "next/navigation";
 import { getCurrentProfile } from "@/lib/auth";
-import { createClient } from "@/lib/supabase/server";
 import { listMembers } from "@/lib/actions/members";
 import { listRoles } from "@/lib/actions/roles";
 import { MembersView } from "@/components/settings/members-view";
@@ -8,10 +7,10 @@ import { MembersView } from "@/components/settings/members-view";
 export const dynamic = "force-dynamic";
 
 export default async function MembersPage() {
-  const profile = await getCurrentProfile();
-  if (!profile) redirect("/login");
-  if (profile.role !== "admin") redirect("/");
-  if (!profile.org_id) {
+  const current = await getCurrentProfile();
+  if (!current) redirect("/login");
+  if (current.currentRole !== "admin") redirect("/");
+  if (!current.currentOrgId) {
     return (
       <div className="py-12 text-center text-sm text-muted-foreground">
         Your account is not assigned to an organization.
@@ -20,8 +19,8 @@ export default async function MembersPage() {
   }
 
   const [members, roles] = await Promise.all([
-    listMembers(profile.org_id),
-    listRoles(profile.org_id),
+    listMembers(current.currentOrgId),
+    listRoles(current.currentOrgId),
   ]);
 
   return (
@@ -34,7 +33,7 @@ export default async function MembersPage() {
       </div>
 
       <MembersView
-        orgId={profile.org_id}
+        orgId={current.currentOrgId}
         members={members}
         roles={roles}
       />

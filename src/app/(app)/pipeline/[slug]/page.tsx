@@ -80,8 +80,8 @@ export default async function ProjectDetailPage({
 }) {
   const { slug } = await params;
   const supabase = await createClient();
-  const profile = await getCurrentProfile();
-  const isAdmin = profile?.role === "admin";
+  const current = await getCurrentProfile();
+  const isAdmin = current?.currentRole === "admin";
 
   const project = await getProjectBySlug(slug);
   if (!project) notFound();

@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { UserX } from "lucide-react";
-import type { Organization, Profile } from "@/lib/types";
+import type { MemberWithRole, Organization } from "@/lib/types";
 import { removeOrgMember } from "@/lib/actions/super-admin";
 import { Button } from "@/components/ui/button";
 import {
@@ -21,7 +21,7 @@ export function OrgDetailView({
   members,
 }: {
   org: Organization;
-  members: Profile[];
+  members: MemberWithRole[];
 }) {
   const router = useRouter();
 
@@ -87,7 +87,7 @@ export function OrgDetailView({
                     </span>
                   </td>
                   <td className="px-4 py-3 text-muted-foreground">
-                    {new Date(m.created_at).toLocaleDateString()}
+                    {new Date(m.joined_at).toLocaleDateString()}
                   </td>
                   <td className="px-4 py-3">
                     {m.must_change_password ? (

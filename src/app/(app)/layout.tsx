@@ -1,6 +1,5 @@
 import { redirect } from "next/navigation";
 import { getCurrentProfile } from "@/lib/auth";
-import { createClient } from "@/lib/supabase/server";
 import { RoleProvider } from "@/components/shared/role-context";
 import { AppShell } from "@/components/shell/app-shell";
 
@@ -9,30 +8,23 @@ export default async function AppLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const profile = await getCurrentProfile();
+  const current = await getCurrentProfile();
 
-  if (!profile) redirect("/login");
+  if (!current) redirect("/login");
 
   // Super admins have their own layout — don't load the regular app shell.
-  if (profile.is_super_admin) redirect("/super-admin/organizations");
+  if (current.profile.is_super_admin) redirect("/super-admin/organizations");
 
   // First-login password change — outside (app) so no redirect loop.
-  if (profile.must_change_password) redirect("/change-password");
+  if (current.profile.must_change_password) redirect("/change-password");
 
-  let orgName: string | null = null;
-  if (profile.org_id) {
-    const supabase = await createClient();
-    const { data } = await supabase
-      .from("organizations")
-      .select("name")
-      .eq("id", profile.org_id)
-      .single();
-    orgName = data?.name ?? null;
-  }
+  if (!current.currentOrgId) redirect("/no-organization");
 
   return (
-    <RoleProvider profile={profile}>
-      <AppShell orgName={orgName}>{children}</AppShell>
+    <RoleProvider current={current}>
+      <AppShell memberships={current.memberships} currentOrgId={current.currentOrgId}>
+        {children}
+      </AppShell>
     </RoleProvider>
   );
 }

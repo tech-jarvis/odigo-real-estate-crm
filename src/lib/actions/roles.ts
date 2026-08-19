@@ -1,34 +1,9 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { createClient } from "@/lib/supabase/server";
+import { requireOrgAdmin } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 import type { OrgRole, OrgRoleWithPermissions, PermissionKey } from "@/lib/types";
-
-async function requireOrgAdmin(): Promise<{
-  supabase: Awaited<ReturnType<typeof createClient>>;
-  orgId: string;
-}> {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error("Not authenticated");
-
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("role, org_id")
-    .eq("id", user.id)
-    .single();
-
-  if (!profile) throw new Error("Profile not found");
-  if (profile.role !== "admin") {
-    throw new Error("Forbidden — admin only");
-  }
-  if (!profile.org_id) {
-    throw new Error("No organization assigned");
-  }
-
-  return { supabase, orgId: profile.org_id as string };
-}
 
 export async function listRoles(orgId: string): Promise<OrgRoleWithPermissions[]> {
   const { supabase } = await requireOrgAdmin();

@@ -1,20 +1,25 @@
 "use client";
 
 import { useState } from "react";
-import { Menu, X, ChevronsUpDown } from "lucide-react";
+import { Menu, X } from "lucide-react";
 import { Logo } from "@/components/shared/logo";
 import { SidebarNav } from "./sidebar-nav";
 import { UserMenu } from "./user-menu";
+import { OrgSwitcher } from "./org-switcher";
 import { cn } from "@/lib/utils";
+import type { OrgMembershipWithOrg } from "@/lib/types";
 
 export function AppShell({
   children,
-  orgName,
+  memberships,
+  currentOrgId,
 }: {
   children: React.ReactNode;
-  orgName?: string | null;
+  memberships: OrgMembershipWithOrg[];
+  currentOrgId: string | null;
 }) {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const orgName = memberships.find((m) => m.org_id === currentOrgId)?.organizations?.name ?? null;
 
   return (
     <div className="min-h-screen lg:grid lg:grid-cols-[260px_1fr]">
@@ -22,15 +27,8 @@ export function AppShell({
       <aside className="sticky top-0 hidden h-screen flex-col border-r border-border bg-card/40 p-4 lg:flex">
         <div className="px-2 py-3">
           <Logo />
-          {orgName && (
-            <button
-              className="mt-2 flex w-full items-center gap-1.5 rounded-md border border-border bg-secondary/30 px-2.5 py-1.5 text-left hover:bg-secondary/60 transition-colors"
-              title={orgName}
-              disabled
-            >
-              <span className="flex-1 truncate text-xs font-medium text-foreground/80">{orgName}</span>
-              <ChevronsUpDown className="h-3 w-3 shrink-0 text-muted-foreground" />
-            </button>
+          {memberships.length > 0 && (
+            <OrgSwitcher memberships={memberships} currentOrgId={currentOrgId} />
           )}
         </div>
         <div className="mt-4 flex-1">
