@@ -70,15 +70,76 @@ export async function createMemberWithPassword(
   email: string,
   orgRoleId: string,
   tempPassword: string
-): Promise<void> {
+): Promise<{ status: "created" | "pending_existing_user" }> {
   if (!isValidEmail(email)) {
     throw new Error("Invalid email address format");
   }
   const cleanEmail = normalizeEmail(email);
-  const { orgId } = await requireOrgAdmin();
+  const { orgId, supabase } = await requireOrgAdmin();
   const admin = createAdminClient();
 
   const crmRole = await crmRoleFromOrgRole(admin, orgRoleId);
+
+  // Does this email already have an account (in this org or another)?
+  const { data: existingProfile } = await admin
+    .from("profiles")
+    .select("id")
+    .ilike("email", cleanEmail)
+    .maybeSingle();
+
+  if (existingProfile) {
+    // They already have credentials — don't create a duplicate auth
+    // account or set a password for them. Add a pending membership +
+    // an invitations row (for the accept flow / audit trail); they
+    // must explicitly accept before this org's data becomes visible.
+    const { data: { user } } = await supabase.auth.getUser();
+
+    const { data: existingInv } = await admin
+      .from("invitations")
+      .select("id")
+      .eq("org_id", orgId)
+      .eq("email", cleanEmail)
+      .is("accepted_at", null)
+      .is("cancelled_at", null)
+      .is("declined_at", null)
+      .maybeSingle();
+
+    if (existingInv) {
+      await admin
+        .from("invitations")
+        .update({
+          crm_role: crmRole,
+          org_role_id: orgRoleId,
+          expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+        })
+        .eq("id", existingInv.id);
+    } else {
+      const { error: invErr } = await admin.from("invitations").insert({
+        org_id: orgId,
+        email: cleanEmail,
+        crm_role: crmRole,
+        org_role_id: orgRoleId,
+        invited_by: user?.id ?? null,
+      });
+      if (invErr) throw new Error(invErr.message);
+    }
+
+    const { error: memberErr } = await admin.from("org_members").upsert(
+      {
+        user_id: existingProfile.id,
+        org_id: orgId,
+        role: crmRole,
+        org_role_id: orgRoleId,
+        status: "pending",
+        invited_by: user?.id ?? null,
+      },
+      { onConflict: "user_id,org_id" }
+    );
+    if (memberErr) throw new Error(memberErr.message);
+
+    revalidatePath("/settings/members");
+    return { status: "pending_existing_user" };
+  }
 
   const { data: authData, error: authErr } = await admin.auth.admin.createUser({
     email: cleanEmail,
@@ -105,6 +166,7 @@ export async function createMemberWithPassword(
   if (memberErr) throw new Error(memberErr.message);
 
   revalidatePath("/settings/members");
+  return { status: "created" };
 }
 
 export async function inviteMember(

@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { getCurrentProfile } from "@/lib/auth";
-import { listMembers } from "@/lib/actions/members";
+import { listMembers, listPendingInvitations } from "@/lib/actions/members";
 import { listRoles } from "@/lib/actions/roles";
 import { MembersView } from "@/components/settings/members-view";
 
@@ -18,9 +18,10 @@ export default async function MembersPage() {
     );
   }
 
-  const [members, roles] = await Promise.all([
+  const [members, roles, pendingInvitations] = await Promise.all([
     listMembers(current.currentOrgId),
     listRoles(current.currentOrgId),
+    listPendingInvitations(current.currentOrgId),
   ]);
 
   return (
@@ -36,6 +37,7 @@ export default async function MembersPage() {
         orgId={current.currentOrgId}
         members={members}
         roles={roles}
+        pendingInvitations={pendingInvitations}
       />
     </div>
   );

@@ -3,9 +3,9 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Trash2, Eye, EyeOff, RefreshCw, UserPlus, AlertCircle } from "lucide-react";
-import type { MemberWithRole, OrgRoleWithPermissions } from "@/lib/types";
-import { createMemberWithPassword, removeMember } from "@/lib/actions/members";
+import { Trash2, Eye, EyeOff, RefreshCw, UserPlus, AlertCircle, Clock, X } from "lucide-react";
+import type { Invitation, MemberWithRole, OrgRoleWithPermissions } from "@/lib/types";
+import { cancelInvitation, createMemberWithPassword, removeMember } from "@/lib/actions/members";
 import { isValidEmail, normalizeEmail } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -30,6 +30,7 @@ type Props = {
   orgId: string;
   members: MemberWithRole[];
   roles: OrgRoleWithPermissions[];
+  pendingInvitations: Invitation[];
 };
 
 function generatePassword(): string {
@@ -37,11 +38,12 @@ function generatePassword(): string {
   return Array.from({ length: 12 }, () => chars[Math.floor(Math.random() * chars.length)]).join("");
 }
 
-export function MembersView({ orgId, members, roles }: Props) {
+export function MembersView({ orgId, members, roles, pendingInvitations }: Props) {
   const router = useRouter();
 
   const [removingId, setRemovingId] = useState<string | null>(null);
   const [removing, setRemoving] = useState(false);
+  const [cancellingId, setCancellingId] = useState<string | null>(null);
 
   // Add member form
   const [email, setEmail] = useState("");
@@ -65,8 +67,14 @@ export function MembersView({ orgId, members, roles }: Props) {
     }
     setAdding(true);
     try {
-      await createMemberWithPassword(normalizeEmail(email), orgRoleId, tempPassword);
-      toast.success(`Account created for ${email.trim()}. Share the credentials with them.`);
+      const result = await createMemberWithPassword(normalizeEmail(email), orgRoleId, tempPassword);
+      if (result.status === "pending_existing_user") {
+        toast.success(
+          `${email.trim()} already has an account elsewhere — they've been invited to accept and join this organization.`
+        );
+      } else {
+        toast.success(`Account created for ${email.trim()}. Share the credentials with them.`);
+      }
       setEmail("");
       setOrgRoleId("");
       setTempPassword(generatePassword());
@@ -75,6 +83,19 @@ export function MembersView({ orgId, members, roles }: Props) {
       toast.error((err as Error).message);
     } finally {
       setAdding(false);
+    }
+  }
+
+  async function handleCancelInvite(id: string) {
+    setCancellingId(id);
+    try {
+      await cancelInvitation(id);
+      toast.success("Invitation cancelled");
+      router.refresh();
+    } catch (err) {
+      toast.error((err as Error).message);
+    } finally {
+      setCancellingId(null);
     }
   }
 
@@ -178,6 +199,41 @@ export function MembersView({ orgId, members, roles }: Props) {
             The member will be prompted to change this password on first login.
           </p>
         </form>
+      )}
+
+      {/* Pending invitations */}
+      {pendingInvitations.length > 0 && (
+        <div className="mb-6 rounded-lg border border-border overflow-hidden">
+          <div className="px-4 py-3 bg-secondary/20 border-b border-border">
+            <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+              Pending invitations ({pendingInvitations.length})
+            </p>
+          </div>
+          <ul>
+            {pendingInvitations.map((inv) => (
+              <li
+                key={inv.id}
+                className="flex items-center justify-between border-b border-border px-4 py-3 last:border-0"
+              >
+                <div className="flex items-center gap-2 text-sm">
+                  <Clock className="h-3.5 w-3.5 text-amber-400 shrink-0" />
+                  <span>{inv.email}</span>
+                  <span className="text-xs text-muted-foreground">
+                    · expires {new Date(inv.expires_at).toLocaleDateString()}
+                  </span>
+                </div>
+                <button
+                  onClick={() => handleCancelInvite(inv.id)}
+                  disabled={cancellingId === inv.id}
+                  className="rounded p-1.5 text-muted-foreground hover:bg-destructive/10 hover:text-destructive disabled:opacity-50"
+                  title="Cancel invitation"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
       )}
 
       {/* Members table */}
