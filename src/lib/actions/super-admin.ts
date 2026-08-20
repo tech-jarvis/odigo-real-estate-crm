@@ -60,7 +60,7 @@ export async function getOrganizationWithMembers(
   const { data: rows, error: memErr } = await supabase
     .from("org_members")
     .select(
-      "role, org_role_id, status, created_at, profiles(id, full_name, email, must_change_password)"
+      "role, org_role_id, status, created_at, profiles!org_members_user_id_fkey(id, full_name, email, must_change_password)"
     )
     .eq("org_id", id)
     .eq("status", "active")

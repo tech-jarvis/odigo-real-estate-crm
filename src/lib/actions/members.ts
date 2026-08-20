@@ -12,7 +12,7 @@ export async function listMembers(orgId: string): Promise<MemberWithRole[]> {
   const { data, error } = await supabase
     .from("org_members")
     .select(
-      "role, org_role_id, status, created_at, profiles(id, full_name, email, must_change_password)"
+      "role, org_role_id, status, created_at, profiles!org_members_user_id_fkey(id, full_name, email, must_change_password)"
     )
     .eq("org_id", orgId)
     .eq("status", "active")
