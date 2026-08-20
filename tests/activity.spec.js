@@ -7,7 +7,7 @@ const VIEWER = { email: "viewer@odigo-test.com", password: "OdigoTest2026!" };
 async function login(page, user) {
   await page.goto("/login");
   await page.getByLabel("Email").fill(user.email);
-  await page.getByLabel("Password").fill(user.password);
+  await page.locator("#password").fill(user.password);
   await page.getByRole("button", { name: "Sign in" }).click();
   await page.waitForURL("/", { timeout: 15_000 });
 }

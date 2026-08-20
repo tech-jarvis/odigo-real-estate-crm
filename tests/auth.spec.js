@@ -7,7 +7,7 @@ const VIEWER = { email: "viewer@odigo-test.com", password: "OdigoTest2026!" };
 async function login(page, user) {
   await page.goto("/login");
   await page.getByLabel("Email").fill(user.email);
-  await page.getByLabel("Password").fill(user.password);
+  await page.locator("#password").fill(user.password);
   await page.getByRole("button", { name: "Sign in" }).click();
   await page.waitForURL("/", { timeout: 15_000 });
 }
@@ -59,7 +59,7 @@ test.describe("Authentication", () => {
   test("wrong credentials shows error message", async ({ page }) => {
     await page.goto("/login");
     await page.getByLabel("Email").fill("wrong@odigo-test.com");
-    await page.getByLabel("Password").fill("WrongPassword1!");
+    await page.locator("#password").fill("WrongPassword1!");
     await page.getByRole("button", { name: "Sign in" }).click();
     await expect(page.locator("p.text-destructive")).toBeVisible({ timeout: 8_000 });
     await expect(page).toHaveURL("/login");
