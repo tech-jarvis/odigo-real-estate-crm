@@ -599,6 +599,7 @@ export type Database = {
       is_super_admin: { Args: never; Returns: boolean }
       my_org_id: { Args: never; Returns: string | null }
       current_org_id: { Args: never; Returns: string | null }
+      switch_org: { Args: { p_org_id: string }; Returns: undefined }
       slugify: { Args: { input_text: string }; Returns: string }
     }
     Enums: {

@@ -2,31 +2,17 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import { createAdminClient } from "@/lib/supabase/admin";
 
-/** Switches the caller's current org to one of their own active memberships. */
+/**
+ * Switches the caller's current org to one of their own active
+ * memberships. A single RPC (security definer, checked against
+ * auth.uid() internally) instead of a separate check-then-update —
+ * that used to be two sequential round-trips through the admin
+ * client, which measurably added to how slow switching felt.
+ */
 export async function switchOrg(orgId: string): Promise<void> {
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error("Not authenticated");
-
-  const admin = createAdminClient();
-
-  const { data: membership } = await admin
-    .from("org_members")
-    .select("id")
-    .eq("user_id", user.id)
-    .eq("org_id", orgId)
-    .eq("status", "active")
-    .maybeSingle();
-
-  if (!membership) throw new Error("You are not an active member of that organization");
-
-  const { error } = await admin
-    .from("profiles")
-    .update({ last_active_org_id: orgId })
-    .eq("id", user.id);
-
+  const { error } = await supabase.rpc("switch_org", { p_org_id: orgId });
   if (error) throw new Error(error.message);
 
   revalidatePath("/", "layout");
