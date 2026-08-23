@@ -1,11 +1,16 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Trash2, Eye, EyeOff, RefreshCw, UserPlus, AlertCircle, Clock, X } from "lucide-react";
 import type { Invitation, MemberWithRole, OrgRoleWithPermissions } from "@/lib/types";
-import { cancelInvitation, createMemberWithPassword, removeMember } from "@/lib/actions/members";
+import {
+  cancelInvitation,
+  checkMemberEmailExists,
+  createMemberWithPassword,
+  removeMember,
+} from "@/lib/actions/members";
 import { isValidEmail, normalizeEmail } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -50,6 +55,26 @@ export function MembersView({ orgId, members, roles, pendingInvitations }: Props
   const [orgRoleId, setOrgRoleId] = useState("");
   const [tempPassword, setTempPassword] = useState(generatePassword);
   const [adding, setAdding] = useState(false);
+  const [emailExists, setEmailExists] = useState(false);
+
+  // Check as soon as a syntactically valid email is typed — no point
+  // asking for a password when the account already exists elsewhere,
+  // since it's never used in that case.
+  useEffect(() => {
+    const trimmed = email.trim();
+    if (!isValidEmail(trimmed)) {
+      setEmailExists(false);
+      return;
+    }
+    const timer = setTimeout(async () => {
+      try {
+        setEmailExists(await checkMemberEmailExists(trimmed));
+      } catch {
+        setEmailExists(false);
+      }
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [email]);
 
   function roleName(id: string | null) {
     if (!id) return null;
@@ -69,15 +94,14 @@ export function MembersView({ orgId, members, roles, pendingInvitations }: Props
     try {
       const result = await createMemberWithPassword(normalizeEmail(email), orgRoleId, tempPassword);
       if (result.status === "pending_existing_user") {
-        toast.success(
-          `${email.trim()} already has an account elsewhere — they've been invited to accept and join this organization.`
-        );
+        toast.success(`${email.trim()} has been invited to your organization.`);
       } else {
         toast.success(`Account created for ${email.trim()}. Share the credentials with them.`);
       }
       setEmail("");
       setOrgRoleId("");
       setTempPassword(generatePassword());
+      setEmailExists(false);
       router.refresh();
     } catch (err) {
       toast.error((err as Error).message);
@@ -172,7 +196,8 @@ export function MembersView({ orgId, members, roles, pendingInvitations }: Props
               <PasswordInput
                 value={tempPassword}
                 onChange={(e) => setTempPassword(e.target.value)}
-                required
+                required={!emailExists}
+                disabled={emailExists}
                 className="h-9 font-mono text-sm"
               />
             </div>
@@ -182,6 +207,7 @@ export function MembersView({ orgId, members, roles, pendingInvitations }: Props
               size="icon"
               className="h-9 w-9 shrink-0"
               onClick={() => setTempPassword(generatePassword())}
+              disabled={emailExists}
               title="Generate password"
             >
               <RefreshCw className="h-3.5 w-3.5" />
@@ -192,11 +218,13 @@ export function MembersView({ orgId, members, roles, pendingInvitations }: Props
               className="h-9 gap-1.5"
             >
               <UserPlus className="h-4 w-4" />
-              {adding ? "Creating…" : "Create account"}
+              {adding ? "Adding…" : emailExists ? "Invite to organization" : "Create account"}
             </Button>
           </div>
           <p className="text-xs text-muted-foreground">
-            The member will be prompted to change this password on first login.
+            {emailExists
+              ? "This person already has an account — no password needed, they'll receive an invitation to accept."
+              : "The member will be prompted to change this password on first login."}
           </p>
         </form>
       )}

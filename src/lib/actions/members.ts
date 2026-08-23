@@ -6,6 +6,25 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import type { Invitation, MemberWithRole, Profile, UserRole } from "@/lib/types";
 import { isValidEmail, normalizeEmail } from "@/lib/utils";
 
+/** Used by the Add-member form to disable the temp-password field in
+ *  real time — the password is meaningless for an email that already
+ *  has an account elsewhere, since createMemberWithPassword ignores it
+ *  in that case anyway. Requires org-admin auth, same as the invite
+ *  itself, so it's not an open enumeration endpoint. */
+export async function checkMemberEmailExists(email: string): Promise<boolean> {
+  if (!isValidEmail(email)) return false;
+  await requireOrgAdmin();
+  const admin = createAdminClient();
+
+  const { data } = await admin
+    .from("profiles")
+    .select("id")
+    .ilike("email", normalizeEmail(email))
+    .maybeSingle();
+
+  return !!data;
+}
+
 export async function listMembers(orgId: string): Promise<MemberWithRole[]> {
   const { supabase } = await requireOrgAdmin();
 
