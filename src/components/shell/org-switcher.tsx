@@ -2,6 +2,7 @@
 
 import { useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Check, ChevronsUpDown } from "lucide-react";
 import { switchOrg } from "@/lib/actions/orgs";
@@ -21,6 +22,7 @@ export function OrgSwitcher({
   currentOrgId: string | null;
 }) {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const [isPending, startTransition] = useTransition();
   const current = memberships.find((m) => m.org_id === currentOrgId);
   const orgName = current?.organizations?.name ?? "No organization";
@@ -30,6 +32,12 @@ export function OrgSwitcher({
     startTransition(async () => {
       try {
         await switchOrg(orgId);
+        // Every org's companies/projects/dashboard/etc. share the same
+        // React Query keys today (none are org-scoped) — nothing else
+        // will notice the org changed unless we drop the cache here.
+        // router.refresh() alone only re-renders Server Components; it
+        // never touches this client-side cache.
+        queryClient.clear();
         router.refresh();
       } catch (err) {
         toast.error((err as Error).message);

@@ -1,11 +1,12 @@
 import { redirect } from "next/navigation";
 import { getCurrentProfile } from "@/lib/auth";
-import { listMembers, listPendingInvitations } from "@/lib/actions/members";
-import { listRoles } from "@/lib/actions/roles";
 import { MembersView } from "@/components/settings/members-view";
 
 export const dynamic = "force-dynamic";
 
+// No data-fetching here — MembersView loads members/roles/invitations
+// client-side via React Query so mutations can invalidate + refetch
+// without a full server round-trip.
 export default async function MembersPage() {
   const current = await getCurrentProfile();
   if (!current) redirect("/login");
@@ -18,12 +19,6 @@ export default async function MembersPage() {
     );
   }
 
-  const [members, roles, pendingInvitations] = await Promise.all([
-    listMembers(current.currentOrgId),
-    listRoles(current.currentOrgId),
-    listPendingInvitations(current.currentOrgId),
-  ]);
-
   return (
     <div>
       <div className="mb-6">
@@ -33,12 +28,7 @@ export default async function MembersPage() {
         </p>
       </div>
 
-      <MembersView
-        orgId={current.currentOrgId}
-        members={members}
-        roles={roles}
-        pendingInvitations={pendingInvitations}
-      />
+      <MembersView orgId={current.currentOrgId} />
     </div>
   );
 }
