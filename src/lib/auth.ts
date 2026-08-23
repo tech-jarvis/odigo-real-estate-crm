@@ -38,12 +38,19 @@ export async function getCurrentProfile(): Promise<CurrentUser | null> {
 
   const current = active.find((m) => m.org_id === currentOrgId) ?? null;
 
+  const { data: pending } = await supabase
+    .from("org_members")
+    .select("org_id, role, org_role_id, status, organizations(id, name, slug)")
+    .eq("user_id", user.id)
+    .eq("status", "pending");
+
   return {
     profile,
     memberships: active,
     currentOrgId,
     currentRole: current?.role ?? null,
     currentOrgRoleId: current?.org_role_id ?? null,
+    pendingInvites: (pending ?? []) as unknown as OrgMembershipWithOrg[],
   };
 }
 

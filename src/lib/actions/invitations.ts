@@ -1,5 +1,6 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 
@@ -143,5 +144,98 @@ export async function declineInvitation(
     .eq("id", inv.id);
 
   const orgName = (inv.organizations as { name: string } | null)?.name ?? "the organization";
+  return { orgName };
+}
+
+/** In-app accept — used by the pending-invites banner for an already
+ *  signed-in user, so they don't need a token/link to act on an invite
+ *  that only ever created a pending org_members row (no email sent). */
+export async function acceptOrgInvite(
+  orgId: string
+): Promise<{ orgName: string } | { error: string }> {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: "You must be signed in to accept an invitation." };
+
+  const admin = createAdminClient();
+
+  const { data: membership } = await admin
+    .from("org_members")
+    .select("id, status, organizations(name)")
+    .eq("user_id", user.id)
+    .eq("org_id", orgId)
+    .maybeSingle();
+
+  if (!membership || membership.status !== "pending") {
+    return { error: "No pending invitation found for that organization." };
+  }
+
+  const { error: memberErr } = await admin
+    .from("org_members")
+    .update({ status: "active" })
+    .eq("id", membership.id);
+  if (memberErr) return { error: memberErr.message };
+
+  await admin
+    .from("profiles")
+    .update({ last_active_org_id: orgId })
+    .eq("id", user.id)
+    .is("last_active_org_id", null);
+
+  if (user.email) {
+    await admin
+      .from("invitations")
+      .update({ accepted_at: new Date().toISOString() })
+      .eq("org_id", orgId)
+      .ilike("email", user.email)
+      .is("accepted_at", null)
+      .is("cancelled_at", null)
+      .is("declined_at", null);
+  }
+
+  revalidatePath("/", "layout");
+  const orgName =
+    (membership.organizations as unknown as { name: string } | null)?.name ?? "the organization";
+  return { orgName };
+}
+
+/** In-app decline — counterpart to acceptOrgInvite. */
+export async function declineOrgInvite(
+  orgId: string
+): Promise<{ orgName: string } | { error: string }> {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: "You must be signed in to decline an invitation." };
+
+  const admin = createAdminClient();
+
+  const { data: membership } = await admin
+    .from("org_members")
+    .select("id, status, organizations(name)")
+    .eq("user_id", user.id)
+    .eq("org_id", orgId)
+    .maybeSingle();
+
+  if (!membership || membership.status !== "pending") {
+    return { error: "No pending invitation found for that organization." };
+  }
+
+  const { error: delErr } = await admin.from("org_members").delete().eq("id", membership.id);
+  if (delErr) return { error: delErr.message };
+
+  if (user.email) {
+    await admin
+      .from("invitations")
+      .update({ declined_at: new Date().toISOString() })
+      .eq("org_id", orgId)
+      .ilike("email", user.email)
+      .is("accepted_at", null)
+      .is("cancelled_at", null)
+      .is("declined_at", null);
+  }
+
+  revalidatePath("/", "layout");
+  const orgName =
+    (membership.organizations as unknown as { name: string } | null)?.name ?? "the organization";
   return { orgName };
 }

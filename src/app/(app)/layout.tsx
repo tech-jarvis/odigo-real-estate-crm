@@ -22,7 +22,11 @@ export default async function AppLayout({
 
   return (
     <RoleProvider current={current}>
-      <AppShell memberships={current.memberships} currentOrgId={current.currentOrgId}>
+      <AppShell
+        memberships={current.memberships}
+        currentOrgId={current.currentOrgId}
+        pendingInvites={current.pendingInvites}
+      >
         {children}
       </AppShell>
     </RoleProvider>

@@ -3,6 +3,7 @@ import { Building2 } from "lucide-react";
 import { getCurrentProfile } from "@/lib/auth";
 import { Logo } from "@/components/shared/logo";
 import { createClient } from "@/lib/supabase/server";
+import { PendingInvitesBanner } from "@/components/shell/pending-invites-banner";
 
 export default async function NoOrganizationPage() {
   const current = await getCurrentProfile();
@@ -14,14 +15,20 @@ export default async function NoOrganizationPage() {
   return (
     <div className="flex min-h-screen flex-col items-center justify-center gap-6 bg-background px-4">
       <Logo />
+      {current.pendingInvites.length > 0 && (
+        <div className="w-full max-w-sm">
+          <PendingInvitesBanner invites={current.pendingInvites} />
+        </div>
+      )}
       <div className="w-full max-w-sm rounded-lg border border-border bg-card p-8 text-center shadow-sm">
         <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-secondary">
           <Building2 className="h-6 w-6 text-muted-foreground" />
         </div>
         <h1 className="text-lg font-semibold">No active organization</h1>
         <p className="mt-1.5 text-sm text-muted-foreground">
-          You&apos;re not currently a member of any organization. Ask an admin to invite you, or
-          check back if you were recently removed.
+          {current.pendingInvites.length > 0
+            ? "Accept an invitation above to get started."
+            : "You're not currently a member of any organization. Ask an admin to invite you, or check back if you were recently removed."}
         </p>
         <form
           action={async () => {

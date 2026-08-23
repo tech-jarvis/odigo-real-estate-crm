@@ -141,6 +141,8 @@ export type CurrentUser = {
   currentOrgId: string | null;
   currentRole: UserRole | null;
   currentOrgRoleId: string | null;
+  /** Orgs that have invited this user but they haven't accepted/declined yet. */
+  pendingInvites: OrgMembershipWithOrg[];
 };
 
 export type ProjectContactLink = {

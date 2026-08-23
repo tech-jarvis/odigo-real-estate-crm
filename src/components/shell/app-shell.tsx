@@ -6,6 +6,7 @@ import { Logo } from "@/components/shared/logo";
 import { SidebarNav } from "./sidebar-nav";
 import { UserMenu } from "./user-menu";
 import { OrgSwitcher } from "./org-switcher";
+import { PendingInvitesBanner } from "./pending-invites-banner";
 import { cn } from "@/lib/utils";
 import type { OrgMembershipWithOrg } from "@/lib/types";
 
@@ -13,10 +14,12 @@ export function AppShell({
   children,
   memberships,
   currentOrgId,
+  pendingInvites,
 }: {
   children: React.ReactNode;
   memberships: OrgMembershipWithOrg[];
   currentOrgId: string | null;
+  pendingInvites: OrgMembershipWithOrg[];
 }) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const orgName = memberships.find((m) => m.org_id === currentOrgId)?.organizations?.name ?? null;
@@ -87,6 +90,7 @@ export function AppShell({
       {/* ---------- Main content ---------- */}
       <main className="min-w-0">
         <div className="mx-auto w-full max-w-7xl px-4 py-8 sm:px-6 sm:py-8 lg:px-8 lg:py-10">
+          <PendingInvitesBanner invites={pendingInvites} />
           {children}
         </div>
       </main>
