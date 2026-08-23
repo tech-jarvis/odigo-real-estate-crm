@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import type { Organization, OrgWithCount, Profile } from "@/lib/types";
+import type { MemberWithRole, Organization, OrgWithCount, Profile } from "@/lib/types";
 import { isValidEmail, normalizeEmail } from "@/lib/utils";
 
 async function requireSuperAdmin() {
@@ -31,13 +31,13 @@ export async function listOrganizations(): Promise<OrgWithCount[]> {
 
   if (error) throw new Error(error.message);
 
-  const { data: profiles } = await supabase
-    .from("profiles")
+  const { data: members } = await supabase
+    .from("org_members")
     .select("org_id")
-    .not("org_id", "is", null);
+    .eq("status", "active");
 
-  const counts = (profiles ?? []).reduce<Record<string, number>>((acc, p) => {
-    if (p.org_id) acc[p.org_id] = (acc[p.org_id] ?? 0) + 1;
+  const counts = (members ?? []).reduce<Record<string, number>>((acc, m) => {
+    acc[m.org_id] = (acc[m.org_id] ?? 0) + 1;
     return acc;
   }, {});
 
@@ -46,7 +46,7 @@ export async function listOrganizations(): Promise<OrgWithCount[]> {
 
 export async function getOrganizationWithMembers(
   id: string
-): Promise<{ org: Organization; members: Profile[] }> {
+): Promise<{ org: Organization; members: MemberWithRole[] }> {
   const supabase = await requireSuperAdmin();
 
   const { data: org, error: orgErr } = await supabase
@@ -57,15 +57,35 @@ export async function getOrganizationWithMembers(
 
   if (orgErr || !org) throw new Error("Organization not found");
 
-  const { data: members, error: memErr } = await supabase
-    .from("profiles")
-    .select("*")
+  const { data: rows, error: memErr } = await supabase
+    .from("org_members")
+    .select(
+      "role, org_role_id, status, created_at, profiles!org_members_user_id_fkey(id, full_name, email, must_change_password)"
+    )
     .eq("org_id", id)
+    .eq("status", "active")
     .order("created_at", { ascending: true });
 
   if (memErr) throw new Error(memErr.message);
 
-  return { org, members: members ?? [] };
+  const members: MemberWithRole[] = (rows ?? []).map((m) => {
+    const p = m.profiles as unknown as Pick<
+      Profile,
+      "id" | "full_name" | "email" | "must_change_password"
+    >;
+    return {
+      id: p.id,
+      full_name: p.full_name,
+      email: p.email,
+      must_change_password: p.must_change_password,
+      role: m.role,
+      org_role_id: m.org_role_id,
+      status: m.status,
+      joined_at: m.created_at,
+    };
+  });
+
+  return { org, members };
 }
 
 function slugify(name: string): string {
@@ -174,17 +194,15 @@ export async function createOrganization(
     throw new Error(viewerPermsErr.message);
   }
 
-  // 7. Create admin profile linked to org and Admin org role
+  // 7. Create the admin's profile
   const { error: profileErr } = await admin
     .from("profiles")
     .upsert(
       {
         id: userId,
         email: cleanEmail,
-        org_id: org.id,
-        role: "admin",
-        org_role_id: adminRole.id,
         must_change_password: true,
+        last_active_org_id: org.id,
       },
       { onConflict: "id" }
     );
@@ -195,29 +213,61 @@ export async function createOrganization(
     throw new Error(profileErr.message);
   }
 
+  // 8. Link the admin to the org via an active membership
+  const { error: memberErr } = await admin.from("org_members").insert({
+    user_id: userId,
+    org_id: org.id,
+    role: "admin",
+    org_role_id: adminRole.id,
+    status: "active",
+  });
+
+  if (memberErr) {
+    await admin.from("organizations").delete().eq("id", org.id);
+    await admin.auth.admin.deleteUser(userId);
+    throw new Error(memberErr.message);
+  }
+
   revalidatePath("/super-admin/organizations");
   return { org };
 }
-
 
 export async function removeOrgMember(userId: string, orgId: string): Promise<void> {
   await requireSuperAdmin();
   const admin = createAdminClient();
 
   const { data: target } = await admin
-    .from("profiles")
-    .select("org_id")
-    .eq("id", userId)
-    .single();
+    .from("org_members")
+    .select("id")
+    .eq("user_id", userId)
+    .eq("org_id", orgId)
+    .eq("status", "active")
+    .maybeSingle();
 
-  if (target?.org_id !== orgId) throw new Error("User not in this organization");
+  if (!target) throw new Error("User not in this organization");
 
   const { error } = await admin
-    .from("profiles")
-    .update({ org_id: null, org_role_id: null, must_change_password: false })
-    .eq("id", userId);
+    .from("org_members")
+    .update({ status: "revoked" })
+    .eq("id", target.id);
 
   if (error) throw new Error(error.message);
+
+  const { data: fallback } = await admin
+    .from("org_members")
+    .select("org_id")
+    .eq("user_id", userId)
+    .eq("status", "active")
+    .neq("org_id", orgId)
+    .limit(1)
+    .maybeSingle();
+
+  await admin
+    .from("profiles")
+    .update({ last_active_org_id: fallback?.org_id ?? null })
+    .eq("id", userId)
+    .eq("last_active_org_id", orgId);
+
   revalidatePath(`/super-admin/organizations/${orgId}`);
 }
 

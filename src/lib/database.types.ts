@@ -232,6 +232,7 @@ export type Database = {
           cancelled_at: string | null
           created_at: string
           crm_role: Database["public"]["Enums"]["user_role"]
+          declined_at: string | null
           email: string
           expires_at: string
           id: string
@@ -245,6 +246,7 @@ export type Database = {
           cancelled_at?: string | null
           created_at?: string
           crm_role?: Database["public"]["Enums"]["user_role"]
+          declined_at?: string | null
           email: string
           expires_at?: string
           id?: string
@@ -258,6 +260,7 @@ export type Database = {
           cancelled_at?: string | null
           created_at?: string
           crm_role?: Database["public"]["Enums"]["user_role"]
+          declined_at?: string | null
           email?: string
           expires_at?: string
           id?: string
@@ -340,6 +343,7 @@ export type Database = {
           full_name: string | null
           id: string
           is_super_admin: boolean
+          last_active_org_id: string | null
           must_change_password: boolean
           org_id: string | null
           org_role_id: string | null
@@ -351,6 +355,7 @@ export type Database = {
           full_name?: string | null
           id: string
           is_super_admin?: boolean
+          last_active_org_id?: string | null
           must_change_password?: boolean
           org_id?: string | null
           org_role_id?: string | null
@@ -362,6 +367,7 @@ export type Database = {
           full_name?: string | null
           id?: string
           is_super_admin?: boolean
+          last_active_org_id?: string | null
           must_change_password?: boolean
           org_id?: string | null
           org_role_id?: string | null
@@ -380,6 +386,78 @@ export type Database = {
             columns: ["org_role_id"]
             isOneToOne: false
             referencedRelation: "org_roles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "profiles_last_active_org_id_fkey"
+            columns: ["last_active_org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      org_members: {
+        Row: {
+          created_at: string
+          id: string
+          invited_by: string | null
+          org_id: string
+          org_role_id: string | null
+          role: Database["public"]["Enums"]["user_role"]
+          status: Database["public"]["Enums"]["org_member_status"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          invited_by?: string | null
+          org_id: string
+          org_role_id?: string | null
+          role?: Database["public"]["Enums"]["user_role"]
+          status?: Database["public"]["Enums"]["org_member_status"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          invited_by?: string | null
+          org_id?: string
+          org_role_id?: string | null
+          role?: Database["public"]["Enums"]["user_role"]
+          status?: Database["public"]["Enums"]["org_member_status"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "org_members_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "org_members_org_role_id_fkey"
+            columns: ["org_role_id"]
+            isOneToOne: false
+            referencedRelation: "org_roles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "org_members_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "org_members_invited_by_fkey"
+            columns: ["invited_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -520,6 +598,8 @@ export type Database = {
       is_admin: { Args: never; Returns: boolean }
       is_super_admin: { Args: never; Returns: boolean }
       my_org_id: { Args: never; Returns: string | null }
+      current_org_id: { Args: never; Returns: string | null }
+      switch_org: { Args: { p_org_id: string }; Returns: undefined }
       slugify: { Args: { input_text: string }; Returns: string }
     }
     Enums: {
@@ -529,6 +609,7 @@ export type Database = {
         | "file_reference"
         | "call_summary"
       company_segment: "residential" | "commercial" | "industrial"
+      org_member_status: "pending" | "active" | "revoked"
       permission_key:
         | "view_projects"   | "create_projects"  | "edit_projects"   | "delete_projects"
         | "view_companies"  | "create_companies" | "edit_companies"  | "delete_companies"
@@ -670,6 +751,7 @@ export const Constants = {
         "call_summary",
       ],
       company_segment: ["residential", "commercial", "industrial"],
+      org_member_status: ["pending", "active", "revoked"],
       permission_key: [
         "view_projects",   "create_projects",  "edit_projects",   "delete_projects",
         "view_companies",  "create_companies", "edit_companies",  "delete_companies",

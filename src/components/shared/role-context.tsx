@@ -1,26 +1,34 @@
 "use client";
 
 import { createContext, useContext } from "react";
-import type { Profile, UserRole } from "@/lib/types";
+import type { CurrentUser, OrgMembershipWithOrg, Profile, UserRole } from "@/lib/types";
 
 interface RoleContextValue {
   profile: Profile;
-  role: UserRole;
+  memberships: OrgMembershipWithOrg[];
+  currentOrgId: string | null;
+  role: UserRole | null;
   isAdmin: boolean;
 }
 
 const RoleContext = createContext<RoleContextValue | null>(null);
 
 export function RoleProvider({
-  profile,
+  current,
   children,
 }: {
-  profile: Profile;
+  current: CurrentUser;
   children: React.ReactNode;
 }) {
   return (
     <RoleContext.Provider
-      value={{ profile, role: profile.role, isAdmin: profile.role === "admin" }}
+      value={{
+        profile: current.profile,
+        memberships: current.memberships,
+        currentOrgId: current.currentOrgId,
+        role: current.currentRole,
+        isAdmin: current.currentRole === "admin",
+      }}
     >
       {children}
     </RoleContext.Provider>

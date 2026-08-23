@@ -56,9 +56,9 @@ export default async function SuperAdminLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const profile = await getCurrentProfile();
+  const current = await getCurrentProfile();
 
-  if (!profile || !profile.is_super_admin) {
+  if (!current || !current.profile.is_super_admin) {
     redirect("/");
   }
 

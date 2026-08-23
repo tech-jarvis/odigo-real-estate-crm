@@ -93,6 +93,7 @@ export type Invitation = {
   expires_at: string;
   accepted_at: string | null;
   cancelled_at: string | null;
+  declined_at: string | null;
   created_at: string;
 };
 
@@ -103,6 +104,45 @@ export type OrgRoleWithPermissions = OrgRole & { permissions: PermissionKey[] };
 export type ProfileWithOrg = Profile & {
   organization: Pick<Organization, "id" | "name"> | null;
   org_role: Pick<OrgRole, "id" | "name"> | null;
+};
+
+// ---------- Multi-org membership (migration 18) ----------
+
+export type OrgMemberStatus = "pending" | "active" | "revoked";
+
+export type OrgMember = {
+  id: string;
+  user_id: string;
+  org_id: string;
+  role: UserRole;
+  org_role_id: string | null;
+  status: OrgMemberStatus;
+  invited_by: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+/** A user's own active membership, joined with the org it belongs to — used to render the org switcher. */
+export type OrgMembershipWithOrg = Pick<OrgMember, "org_id" | "role" | "org_role_id" | "status"> & {
+  organizations: Pick<Organization, "id" | "name" | "slug"> | null;
+};
+
+/** A row in an org's member list — the profile joined with that person's org_members role for this org. */
+export type MemberWithRole = Pick<Profile, "id" | "full_name" | "email" | "must_change_password"> & {
+  role: UserRole;
+  org_role_id: string | null;
+  status: OrgMemberStatus;
+  joined_at: string;
+};
+
+export type CurrentUser = {
+  profile: Profile;
+  memberships: OrgMembershipWithOrg[];
+  currentOrgId: string | null;
+  currentRole: UserRole | null;
+  currentOrgRoleId: string | null;
+  /** Orgs that have invited this user but they haven't accepted/declined yet. */
+  pendingInvites: OrgMembershipWithOrg[];
 };
 
 export type ProjectContactLink = {
