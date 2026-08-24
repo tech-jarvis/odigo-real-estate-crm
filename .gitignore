@@ -38,3 +38,6 @@ mcp-server/dist/
 
 /mcp-server/node_modules
 /mcp-server/dist
+
+# supabase cli temp/cache
+supabase/.temp/
